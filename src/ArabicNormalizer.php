@@ -6,9 +6,13 @@ namespace Watheq\QuranValidator;
 
 use Watheq\QuranValidator\Contracts\ArabicNormalizerInterface;
 use Watheq\QuranValidator\Exceptions\InvalidUtf8;
+use Watheq\QuranValidator\ValueObjects\ArabicSegment;
 
 final class ArabicNormalizer implements ArabicNormalizerInterface
 {
+    private const string ARABIC_CHARACTER_PATTERN = '/[\x{0600}-\x{06FF}\x{0750}-\x{077F}\x{08A0}-\x{08FF}\x{FB50}-\x{FDFF}\x{FE70}-\x{FEFF}]/u';
+    private const string ARABIC_SEGMENT_PATTERN = '/[\x{0600}-\x{06FF}\x{0750}-\x{077F}\x{08A0}-\x{08FF}\x{FB50}-\x{FDFF}\x{FE70}-\x{FEFF}][\x{0600}-\x{06FF}\x{0750}-\x{077F}\x{08A0}-\x{08FF}\x{FB50}-\x{FDFF}\x{FE70}-\x{FEFF}\s]*/u';
+
     public function normalize(string $text): string
     {
         $this->assertUtf8($text);
@@ -41,6 +45,35 @@ final class ArabicNormalizer implements ArabicNormalizerInterface
         $this->assertUtf8($text);
 
         return preg_replace('/[\x{064B}-\x{065F}]/u', '', $text) ?? $text;
+    }
+
+    public function containsArabic(string $text): bool
+    {
+        $this->assertUtf8($text);
+
+        return preg_match(self::ARABIC_CHARACTER_PATTERN, $text) === 1;
+    }
+
+    public function extractArabicSegments(string $text): array
+    {
+        $this->assertUtf8($text);
+        preg_match_all(self::ARABIC_SEGMENT_PATTERN, $text, $matches, PREG_OFFSET_CAPTURE);
+        $segments = [];
+
+        foreach ($matches[0] as [$matched, $byteOffset]) {
+            $segment = preg_replace('/^\s+|\s+$/u', '', $matched) ?? $matched;
+            if ($segment === '') {
+                continue;
+            }
+
+            $segments[] = new ArabicSegment(
+                $segment,
+                mb_strlen(substr($text, 0, $byteOffset)),
+                mb_strlen(substr($text, 0, $byteOffset + strlen($matched))),
+            );
+        }
+
+        return $segments;
     }
 
     private function assertUtf8(string $text): void
