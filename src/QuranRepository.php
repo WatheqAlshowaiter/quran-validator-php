@@ -43,6 +43,9 @@ final class QuranRepository implements QuranRepositoryInterface
             }
             $this->searchIndex[$verse->reference()] = $normalizer->normalizeForMatching($verse->simpleText);
             $corpus[] = $normalized;
+            if ($simpleNormalized !== $normalized) {
+                $corpus[] = $simpleNormalized;
+            }
         }
 
         $this->corpus = ' '.implode(' ', $corpus).' ';

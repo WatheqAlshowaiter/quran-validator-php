@@ -30,6 +30,8 @@ final class ArabicNormalizer implements ArabicNormalizerInterface
         $text = str_replace('ى', 'ي', $text);
         $text = preg_replace('/وا?ة/u', 'اة', $text) ?? $text;
         $text = str_replace(['يي', 'بصط', 'صيطر', 'الرحمان'], ['ي', 'بسط', 'سيطر', 'الرحمن'], $text);
+        $text = str_replace(['يا ادم', 'يا يها'], ['ياادم', 'يايها'], $text);
+        $text = preg_replace('/(^| )يها(?= |$)/u', '$1يايها', $text) ?? $text;
 
         return preg_replace('/الل/u', 'ال', $text) ?? $text;
     }

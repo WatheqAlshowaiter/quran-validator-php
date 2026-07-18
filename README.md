@@ -50,6 +50,7 @@ Normalization is for comparison, not transliteration or scholarly textual transf
 
 - `validate(string): ValidationResult`
 - `validateReference(string, string): ValidationResult`
+- `detectAndValidate(string): DetectionResult`
 - `verse(string): QuranVerse`
 - `range(string): list<QuranVerse>`
 - `search(string, int = 10): list<SearchResult>`

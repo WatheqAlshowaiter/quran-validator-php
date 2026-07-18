@@ -8,7 +8,10 @@ use Watheq\QuranValidator\Contracts\ArabicNormalizerInterface;
 use Watheq\QuranValidator\Contracts\QuranRepositoryInterface;
 use Watheq\QuranValidator\Data\QuranDatasetLoader;
 use Watheq\QuranValidator\Exceptions\InvalidQuranReference;
+use Watheq\QuranValidator\Exceptions\InvalidUtf8;
 use Watheq\QuranValidator\Exceptions\InvalidVerseRange;
+use Watheq\QuranValidator\ValueObjects\DetectionResult;
+use Watheq\QuranValidator\ValueObjects\DetectionSegment;
 use Watheq\QuranValidator\ValueObjects\FabricationAnalysis;
 use Watheq\QuranValidator\ValueObjects\QuranReference;
 use Watheq\QuranValidator\ValueObjects\QuranVerse;
@@ -18,6 +21,8 @@ use Watheq\QuranValidator\ValueObjects\WordAnalysis;
 
 final class QuranValidator
 {
+    private const string ARABIC_SEGMENT_PATTERN = '/[\x{0600}-\x{06FF}\x{0750}-\x{077F}\x{08A0}-\x{08FF}\x{FB50}-\x{FDFF}\x{FE70}-\x{FEFF}][\x{0600}-\x{06FF}\x{0750}-\x{077F}\x{08A0}-\x{08FF}\x{FB50}-\x{FDFF}\x{FE70}-\x{FEFF}\s]*/u';
+
     public function __construct(
         private readonly QuranRepositoryInterface $repository,
         private readonly ArabicNormalizerInterface $normalizer,
@@ -82,6 +87,35 @@ final class QuranValidator
             expectedNormalized: $expectedNormalized,
             mismatchIndex: $this->mismatchIndex($matchingInput, $matchingExpected),
         );
+    }
+
+    public function detectAndValidate(string $text): DetectionResult
+    {
+        if (!mb_check_encoding($text, 'UTF-8')) {
+            throw new InvalidUtf8('Input must be valid UTF-8.');
+        }
+
+        preg_match_all(self::ARABIC_SEGMENT_PATTERN, $text, $matches, PREG_OFFSET_CAPTURE);
+        $segments = [];
+        $detected = false;
+
+        foreach ($matches[0] as [$matched, $byteOffset]) {
+            $segment = preg_replace('/^\s+|\s+$/u', '', $matched) ?? $matched;
+            if (mb_strlen($segment) < 10) {
+                continue;
+            }
+
+            $validation = $this->validate($segment);
+            $segments[] = new DetectionSegment(
+                $segment,
+                mb_strlen(substr($text, 0, $byteOffset)),
+                mb_strlen(substr($text, 0, $byteOffset + strlen($matched))),
+                $validation,
+            );
+            $detected = $detected || $validation->isValid();
+        }
+
+        return new DetectionResult($detected, $segments);
     }
 
     public function verse(string $reference): QuranVerse
