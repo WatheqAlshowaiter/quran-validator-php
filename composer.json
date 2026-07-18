@@ -3,6 +3,12 @@
     "description": "Validate Quran quotations, references, ranges, and tagged content.",
     "type": "library",
     "license": "MIT",
+    "authors": [
+        {
+            "name": "Watheq Alshowaiter",
+            "email": "watheq.alshowaiter@gmail.com"
+        }
+    ],
     "require": {
         "php": "^8.3",
         "ext-json": "*",
@@ -23,20 +29,21 @@
             "Watheq\\QuranValidator\\Tests\\": "tests/"
         }
     },
-    "scripts": {
-        "test": "phpunit",
-        "analyse": "phpstan analyse",
-        "format": "php-cs-fixer fix",
-        "check": [
-            "@test",
-            "@analyse",
-            "php-cs-fixer fix --dry-run --diff"
-        ]
-    },
     "config": {
         "sort-packages": true,
         "allow-plugins": {
             "phpstan/extension-installer": true
         }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test:coverage": "phpunit --coverage-text",
+        "analyse": "phpstan analyse",
+        "format": "php-cs-fixer fix --diff",
+        "check": [
+            "@test",
+            "@analyse",
+            "php-cs-fixer fix --dry-run --diff"
+        ]
     }
 }

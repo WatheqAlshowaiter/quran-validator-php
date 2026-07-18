@@ -61,11 +61,10 @@ Expected invalid quotations return result objects. Malformed or missing referenc
 ## Development
 
 ```bash
-composer install
-vendor/bin/phpunit
-vendor/bin/phpstan analyse
-vendor/bin/php-cs-fixer fix --dry-run --diff
-composer validate --strict
+composer install # install dependencies
+composer check # check correction of code 
+composer test:coverage # run tests with code coverage
+composer validate --strict # validate composer.json file 
 ```
 
 ## License and data
