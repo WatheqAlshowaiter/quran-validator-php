@@ -10,11 +10,11 @@ use Watheq\QuranValidator\Exceptions\InvalidDataset;
 use Watheq\QuranValidator\ValueObjects\QuranSurah;
 use Watheq\QuranValidator\ValueObjects\QuranVerse;
 
-final readonly class QuranDatasetLoader
+final class QuranDatasetLoader
 {
     public function __construct(
-        private string $versesFile,
-        private string $surahsFile,
+        private readonly string $versesFile,
+        private readonly string $surahsFile,
     ) {
     }
 

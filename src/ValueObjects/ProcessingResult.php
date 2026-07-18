@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Watheq\QuranValidator\ValueObjects;
 
-final readonly class ProcessingResult
+final class ProcessingResult
 {
     /** @param list<DetectedQuote> $quotes */
     public function __construct(
-        private string $originalText,
-        private string $correctedText,
-        private array $quotes,
+        private readonly string $originalText,
+        private readonly string $correctedText,
+        private readonly array $quotes,
     ) {
     }
 

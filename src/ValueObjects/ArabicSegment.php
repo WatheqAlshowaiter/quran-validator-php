@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Watheq\QuranValidator\ValueObjects;
 
-final readonly class ArabicSegment
+final class ArabicSegment
 {
     public function __construct(
-        public string $text,
-        public int $start,
-        public int $end,
+        public readonly string $text,
+        public readonly int $start,
+        public readonly int $end,
     ) {
     }
 }

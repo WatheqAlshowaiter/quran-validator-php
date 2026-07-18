@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace Watheq\QuranValidator\ValueObjects;
 
-final readonly class DetectedQuote
+final class DetectedQuote
 {
     public function __construct(
-        public string $text,
-        public string $reference,
-        public string $format,
-        public int $start,
-        public int $end,
-        public int $textStart,
-        public int $textEnd,
-        public ?ValidationResult $validation = null,
-        public ?string $correctedText = null,
-        public string $detectionMethod = 'tagged',
+        public readonly string $text,
+        public readonly string $reference,
+        public readonly string $format,
+        public readonly int $start,
+        public readonly int $end,
+        public readonly int $textStart,
+        public readonly int $textEnd,
+        public readonly ?ValidationResult $validation = null,
+        public readonly ?string $correctedText = null,
+        public readonly string $detectionMethod = 'tagged',
     ) {
     }
 

@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Watheq\QuranValidator\ValueObjects;
 
-final readonly class SearchResult
+final class SearchResult
 {
     public function __construct(
-        public QuranVerse $verse,
-        public float $score,
+        public readonly QuranVerse $verse,
+        public readonly float $score,
     ) {
     }
 }

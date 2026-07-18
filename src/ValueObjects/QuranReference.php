@@ -7,12 +7,12 @@ namespace Watheq\QuranValidator\ValueObjects;
 use Watheq\QuranValidator\Exceptions\InvalidQuranReference;
 use Watheq\QuranValidator\Exceptions\InvalidVerseRange;
 
-final readonly class QuranReference
+final class QuranReference
 {
     public function __construct(
-        public int $surah,
-        public int $startAyah,
-        public int $endAyah,
+        public readonly int $surah,
+        public readonly int $startAyah,
+        public readonly int $endAyah,
     ) {
         if ($surah < 1 || $surah > 114 || $startAyah < 1 || $endAyah < 1) {
             throw new InvalidQuranReference('Quran references must contain positive surah and ayah numbers within surahs 1-114.');

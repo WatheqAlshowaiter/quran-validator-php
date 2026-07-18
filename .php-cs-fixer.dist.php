@@ -9,7 +9,7 @@ return (new Config())
     ->setRiskyAllowed(true)
     ->setRules([
         '@PSR12' => true,
-        '@PHP83Migration' => true,
+        '@PHP81Migration' => true,
         'declare_strict_types' => true,
         'no_extra_blank_lines' => true,
         'ordered_imports' => true,

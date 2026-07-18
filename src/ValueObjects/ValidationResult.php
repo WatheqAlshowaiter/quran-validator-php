@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace Watheq\QuranValidator\ValueObjects;
 
-final readonly class ValidationResult
+final class ValidationResult
 {
     /** @param list<QuranVerse> $suggestions */
     public function __construct(
-        private bool $valid,
-        private string $matchType,
-        private ?QuranVerse $matchedVerse = null,
-        private ?string $reference = null,
-        public ?string $normalizedInput = null,
-        public ?string $expectedNormalized = null,
-        public ?int $mismatchIndex = null,
-        public array $suggestions = [],
-        public ?string $error = null,
+        private readonly bool $valid,
+        private readonly string $matchType,
+        private readonly ?QuranVerse $matchedVerse = null,
+        private readonly ?string $reference = null,
+        public readonly ?string $normalizedInput = null,
+        public readonly ?string $expectedNormalized = null,
+        public readonly ?int $mismatchIndex = null,
+        public readonly array $suggestions = [],
+        public readonly ?string $error = null,
     ) {
     }
 

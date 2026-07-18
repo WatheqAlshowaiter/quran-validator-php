@@ -20,13 +20,13 @@ use Watheq\QuranValidator\ValueObjects\ValidationResult;
 use Watheq\QuranValidator\ValueObjects\ValidatorOptions;
 use Watheq\QuranValidator\ValueObjects\WordAnalysis;
 
-final readonly class QuranValidator
+final class QuranValidator
 {
-    private ValidatorOptions $options;
+    private readonly ValidatorOptions $options;
 
     public function __construct(
-        private QuranRepositoryInterface $repository,
-        private ArabicNormalizerInterface $normalizer,
+        private readonly QuranRepositoryInterface $repository,
+        private readonly ArabicNormalizerInterface $normalizer,
         ?ValidatorOptions $options = null,
     ) {
         $this->options = $options ?? new ValidatorOptions();

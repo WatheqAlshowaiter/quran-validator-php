@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Watheq\QuranValidator\ValueObjects;
 
-final readonly class QuranSurah
+final class QuranSurah
 {
     public function __construct(
-        public int $number,
-        public string $name,
-        public string $englishName,
-        public int $versesCount,
-        public string $revelationType,
+        public readonly int $number,
+        public readonly string $name,
+        public readonly string $englishName,
+        public readonly int $versesCount,
+        public readonly string $revelationType,
     ) {
     }
 }

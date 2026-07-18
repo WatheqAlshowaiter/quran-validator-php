@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Watheq\QuranValidator\ValueObjects;
 
-final readonly class FabricationAnalysis
+final class FabricationAnalysis
 {
     /** @param list<WordAnalysis> $words */
     public function __construct(
-        public string $normalizedInput,
-        public array $words,
-        public int $fabricatedWords,
+        public readonly string $normalizedInput,
+        public readonly array $words,
+        public readonly int $fabricatedWords,
     ) {
     }
 

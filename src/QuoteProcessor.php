@@ -19,7 +19,10 @@ use Watheq\QuranValidator\ValueObjects\ValidationResult;
 
 final class QuoteProcessor
 {
-    public const array SYSTEM_PROMPTS = [
+    /**
+     * @var mixed[]
+     */
+    public const SYSTEM_PROMPTS = [
         'xml' => "When quoting verses from the Quran, you MUST use this exact format:\n"
             ."<quran ref=\"SURAH:AYAH\">ARABIC_TEXT</quran>\n\n"
             ."For multiple consecutive verses, use a range:\n"

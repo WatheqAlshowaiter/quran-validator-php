@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Watheq\QuranValidator\ValueObjects;
 
-final readonly class WordAnalysis
+final class WordAnalysis
 {
     public function __construct(
-        public string $word,
-        public bool $fabricated,
+        public readonly string $word,
+        public readonly bool $fabricated,
     ) {
     }
 }
