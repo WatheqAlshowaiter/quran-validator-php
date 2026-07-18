@@ -3,6 +3,16 @@
     "description": "Validate Quran quotations, references, ranges, and tagged content.",
     "type": "library",
     "license": "MIT",
+    "keywords": [
+        "Quran",
+        "Islamic",
+        "validation",
+        "llm",
+        "Arabic",
+        "text-verification",
+        "ai",
+        "nlp"
+    ],
     "authors": [
         {
             "name": "Watheq Alshowaiter",
