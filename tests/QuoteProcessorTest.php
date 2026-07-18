@@ -41,7 +41,7 @@ final class QuoteProcessorTest extends TestCase
         self::assertFalse($result->quotes()[0]->isValid());
         self::assertTrue($result->hasErrors());
         self::assertTrue($result->quotes()[0]->wasCorrected());
-        self::assertStringContainsString($this->canonical('1:1'), $result->correctedText());
+        self::assertStringContainsString($this->canonical(), $result->correctedText());
         self::assertSame($content, $result->originalText());
     }
 
@@ -57,7 +57,7 @@ final class QuoteProcessorTest extends TestCase
 
     public function testOverlappingQuotesAreProcessedOnce(): void
     {
-        $verse = $this->canonical('1:1');
+        $verse = $this->canonical();
         $result = (new QuoteProcessor(QuranValidator::fromDefaultDataset()))
             ->process('<quran ref="1:1">'.$verse.' (1:1)</quran>');
 
@@ -92,9 +92,9 @@ final class QuoteProcessorTest extends TestCase
         self::assertSame('112:1-4', $result->quotes()[0]->reference);
     }
 
-    private function canonical(string $reference): string
+    private function canonical(): string
     {
-        return QuranValidator::fromDefaultDataset()->verse($reference)->text;
+        return QuranValidator::fromDefaultDataset()->verse('1:1')->text;
     }
 
     public function testSystemPromptsAvailable(): void
@@ -134,7 +134,7 @@ final class QuoteProcessorTest extends TestCase
     public function testQuickValidateFindsQuranContent(): void
     {
         $result = QuoteProcessor::quickValidate(
-            '<quran ref="1:1">'.$this->canonical('1:1').'</quran>',
+            '<quran ref="1:1">'.$this->canonical().'</quran>',
         );
 
         self::assertTrue($result['has_quran_content']);

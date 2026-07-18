@@ -386,7 +386,6 @@ final class QuranValidatorTest extends TestCase
             minDetectionLength: 4,
         ));
 
-        self::assertInstanceOf(QuranValidator::class, $validator);
         self::assertCount(1, $validator->detectAndValidate('Just الله here')->segments);
     }
 }

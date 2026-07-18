@@ -21,14 +21,16 @@ final class InlineReferenceParser implements QuoteParserInterface
 
         $quotes = [];
         foreach ($matches as $match) {
+            $start = (int) $match[0][1];
+            $textStart = (int) $match[1][1];
             $quotes[] = new DetectedQuote(
                 trim($match[1][0]),
                 $match[3][0],
                 'inline',
-                $match[0][1],
-                $match[0][1] + strlen($match[0][0]),
-                $match[1][1],
-                $match[1][1] + strlen($match[1][0]),
+                $start,
+                $start + strlen($match[0][0]),
+                $textStart,
+                $textStart + strlen($match[1][0]),
             );
         }
 

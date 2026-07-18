@@ -20,13 +20,13 @@ use Watheq\QuranValidator\ValueObjects\ValidationResult;
 use Watheq\QuranValidator\ValueObjects\ValidatorOptions;
 use Watheq\QuranValidator\ValueObjects\WordAnalysis;
 
-final class QuranValidator
+final readonly class QuranValidator
 {
-    private readonly ValidatorOptions $options;
+    private ValidatorOptions $options;
 
     public function __construct(
-        private readonly QuranRepositoryInterface $repository,
-        private readonly ArabicNormalizerInterface $normalizer,
+        private QuranRepositoryInterface $repository,
+        private ArabicNormalizerInterface $normalizer,
         ?ValidatorOptions $options = null,
     ) {
         $this->options = $options ?? new ValidatorOptions();
@@ -217,7 +217,7 @@ final class QuranValidator
     {
         $verses = $this->repository->range($reference);
         if ($verses === []) {
-            throw new InvalidVerseRange(sprintf('Quran verse range %s does not exist.', (string) $reference));
+            throw new InvalidVerseRange(sprintf('Quran verse range %s does not exist.', $reference));
         }
 
         return $verses;

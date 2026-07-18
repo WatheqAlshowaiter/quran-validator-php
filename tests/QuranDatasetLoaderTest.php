@@ -108,7 +108,9 @@ final class QuranDatasetLoaderTest extends TestCase
         (new QuranDatasetLoader($object, $object))->load();
     }
 
-    /** @return array{list<array<string, mixed>>, list<array<string, mixed>>} */
+    /** @return array{list<array<string, mixed>>, list<array<string, mixed>>}
+     * @throws JsonException
+     */
     private function canonicalRows(): array
     {
         /** @var list<array<string, mixed>> $verses */
