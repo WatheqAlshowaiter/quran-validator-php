@@ -70,6 +70,10 @@ composer test:coverage # run tests with code coverage
 composer validate --strict # validate composer.json file 
 ```
 
+## QuranValidator.com
+
+[quranvalidator.com](https://quranvalidator.com) is a live service built by the original author of Quran Validator, using the JavaScript version. It evaluates how well multiple LLMs handle Quran quotations—including textual accuracy and reference correctness—and publishes the results in a transparent leaderboard.
+
 ## License and data
 
 Original PHP source is MIT licensed. The Quran dataset has separate provenance and terms; see [DATASET-LICENSE.md](DATASET-LICENSE.md). Do not assume the source-code license covers the dataset.
