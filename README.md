@@ -2,6 +2,8 @@
 
 Framework-independent Quran quotation validation for PHP 8.3+.
 
+This project is a PHP port of the original [quran-validator](https://github.com/yazinsai/quran-validator).
+
 ## Installation
 
 ```bash
