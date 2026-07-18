@@ -16,7 +16,8 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: :intl, :mbstring
+          # PHPUnit requires mbstring; disable intl to test the polyfill.
+          extensions: mbstring, :intl
           coverage: none
       - run: composer validate --strict
       - run: composer install --no-interaction --prefer-dist
