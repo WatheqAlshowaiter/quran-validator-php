@@ -1,0 +1,71 @@
+# Quran Validator for PHP
+
+Framework-independent Quran quotation validation for PHP 8.3+.
+
+## Installation
+
+```bash
+composer require watheqalshowaiter/quran-validator
+```
+
+## Quick start
+
+```php
+use Watheq\QuranValidator\QuranValidator;
+use Watheq\QuranValidator\QuoteProcessor;
+
+$validator = QuranValidator::fromDefaultDataset();
+$result = $validator->validate('بسم الله الرحمن الرحيم');
+
+$result->isValid();       // true
+$result->reference();     // "1:1"
+$result->matchType();     // "normalized"
+$result->matchedVerse();  // QuranVerse
+
+$reference = $validator->validateReference(
+    text: $validator->verse('2:255')->text,
+    reference: '2:255',
+);
+
+$verse = $validator->verse('2:255');
+$range = $validator->range('112:1-4');
+$results = $validator->search('الحي القيوم');
+
+$processed = (new QuoteProcessor($validator))->process(
+    '<quran ref="112:1">قل هو الله أحد</quran>',
+);
+```
+
+`QuoteProcessor` recognizes XML, Markdown fences, and `[[Q:reference|text]]` brackets in the same input. It reports invalid quotes and, when a valid intended reference exists, replaces their text with the canonical bundled text.
+
+## Normalization
+
+`ArabicNormalizer` removes Arabic diacritics, tatweel, Quranic annotation marks, Arabic verse digits, punctuation, bidi/zero-width controls, and excess whitespace. It normalizes alef wasla and selected alef, Persian yeh, and Persian kaf forms. Matching additionally uses QUL's Imlaei simple text and known Uthmani/Imlaei orthographic equivalents.
+
+Normalization is for comparison, not transliteration or scholarly textual transformation. Whole-verse validation remains exact or normalized only: partial and fuzzy matches are not accepted. Invalid UTF-8 throws `InvalidUtf8`.
+
+## API
+
+- `validate(string): ValidationResult`
+- `validateReference(string, string): ValidationResult`
+- `verse(string): QuranVerse`
+- `range(string): list<QuranVerse>`
+- `search(string, int = 10): list<SearchResult>`
+- `analyzeFabrication(string): FabricationAnalysis`
+- `QuoteProcessor::process(string): ProcessingResult`
+
+Expected invalid quotations return result objects. Malformed or missing references/ranges and invalid datasets throw focused exceptions.
+
+## Development
+
+```bash
+composer install
+vendor/bin/phpunit
+vendor/bin/phpstan analyse
+vendor/bin/php-cs-fixer fix --dry-run --diff
+composer validate --strict
+```
+
+## License and data
+
+Original PHP source is MIT licensed. The Quran dataset has separate provenance and terms; see [DATASET-LICENSE.md](DATASET-LICENSE.md). Do not assume the source-code license covers the dataset.
