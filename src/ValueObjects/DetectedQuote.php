@@ -16,6 +16,7 @@ final readonly class DetectedQuote
         public int $textEnd,
         public ?ValidationResult $validation = null,
         public ?string $correctedText = null,
+        public string $detectionMethod = 'tagged',
     ) {
     }
 

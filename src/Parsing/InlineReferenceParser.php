@@ -1,0 +1,37 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Watheq\QuranValidator\Parsing;
+
+use Watheq\QuranValidator\Contracts\QuoteParserInterface;
+use Watheq\QuranValidator\ValueObjects\DetectedQuote;
+
+final class InlineReferenceParser implements QuoteParserInterface
+{
+    public function parse(string $content): array
+    {
+        $arabic = '\x{0600}-\x{06FF}\x{0750}-\x{077F}\x{08A0}-\x{08FF}\x{FB50}-\x{FDFF}\x{FE70}-\x{FEFF}';
+        preg_match_all(
+            '/(['.$arabic.']['.$arabic.'\s]*?)(\s*)\((\d{1,3}:\d{1,3}(?:-\d{1,3})?)\)/u',
+            $content,
+            $matches,
+            PREG_SET_ORDER | PREG_OFFSET_CAPTURE,
+        );
+
+        $quotes = [];
+        foreach ($matches as $match) {
+            $quotes[] = new DetectedQuote(
+                trim($match[1][0]),
+                $match[3][0],
+                'inline',
+                $match[0][1],
+                $match[0][1] + strlen($match[0][0]),
+                $match[1][1],
+                $match[1][1] + strlen($match[1][0]),
+            );
+        }
+
+        return $quotes;
+    }
+}

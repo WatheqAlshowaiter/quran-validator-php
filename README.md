@@ -38,7 +38,7 @@ $processed = (new QuoteProcessor($validator))->process(
 );
 ```
 
-`QuoteProcessor` recognizes XML, Markdown fences, and `[[Q:reference|text]]` brackets in the same input. It reports invalid quotes and, when a valid intended reference exists, replaces their text with the canonical bundled text.
+`QuoteProcessor` recognizes XML, Markdown fences, `[[Q:reference|text]]` brackets, and `Arabic text (reference)` inline citations in the same input. It reports invalid quotes and, when a valid intended reference exists, replaces their text with the canonical bundled text.
 
 ## Normalization
 
@@ -56,6 +56,8 @@ Normalization is for comparison, not transliteration or scholarly textual transf
 - `search(string, int = 10): list<SearchResult>`
 - `analyzeFabrication(string): FabricationAnalysis`
 - `QuoteProcessor::process(string): ProcessingResult`
+- `QuoteProcessor::getSystemPrompt(string = "xml"): string`
+- `QuoteProcessor::quickValidate(string): array`
 
 Expected invalid quotations return result objects. Malformed or missing references/ranges and invalid datasets throw focused exceptions.
 
