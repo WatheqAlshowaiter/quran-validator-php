@@ -6,6 +6,7 @@ namespace Watheq\QuranValidator\Tests;
 
 use PHPUnit\Framework\TestCase;
 use Watheq\QuranValidator\ArabicNormalizer;
+use Watheq\QuranValidator\ValueObjects\NormalizeOptions;
 
 final class ArabicNormalizerTest extends TestCase
 {
@@ -16,9 +17,46 @@ final class ArabicNormalizerTest extends TestCase
         self::assertSame('السلام عليكم', $normalizer->normalize('السَّلَامُ عَلَيْكُمُ'));
     }
 
+    public function testNormalizationOptionsCanPreserveCharacters(): void
+    {
+        $normalizer = new ArabicNormalizer();
+
+        self::assertSame('أَ', $normalizer->normalize('أَ', new NormalizeOptions(diacritics: false)));
+        self::assertSame('۞', $normalizer->normalize('۞', new NormalizeOptions(markers: false, smallLetters: false)));
+        self::assertSame('١', $normalizer->normalize('١', new NormalizeOptions(verseNumbers: false)));
+        self::assertSame('ـ', $normalizer->normalize('ـ', new NormalizeOptions(tatweel: false)));
+        self::assertSame('،', $normalizer->normalize('،', new NormalizeOptions(punctuation: false)));
+        self::assertSame(
+            '  بسم   الله  ',
+            $normalizer->normalize('  بسم   الله  ', new NormalizeOptions(collapseWhitespace: false)),
+        );
+    }
+
+    public function testMarkersAreRemovedWhenSmallLettersAreEnabled(): void
+    {
+        self::assertSame(
+            '',
+            (new ArabicNormalizer())->normalize('۞', new NormalizeOptions(markers: false)),
+        );
+    }
+
+    public function testStripHamzaEnablesMatchingNormalization(): void
+    {
+        self::assertSame(
+            'ي اة ي بسط سيطر ال',
+            (new ArabicNormalizer())->normalize(
+                'أإئء ى واة يي بصط صيطر الل',
+                new NormalizeOptions(stripHamza: true),
+            ),
+        );
+    }
+
     public function testRemoveDiacriticsPreservesLetters(): void
     {
-        self::assertSame('بسم الله', (new ArabicNormalizer())->removeDiacritics('بِسْمِ اللَّهِ'));
+        $normalizer = new ArabicNormalizer();
+
+        self::assertSame('بسم الله', $normalizer->removeDiacritics('بِسْمِ اللَّهِ'));
+        self::assertSame('ا،  ', $normalizer->removeDiacritics('آَ،  '));
     }
 
     public function testPreservesHamzaFormsAndNormalizesAlefVariants(): void
@@ -53,10 +91,12 @@ final class ArabicNormalizerTest extends TestCase
 
     public function testNormalizesPresentationFormLigature(): void
     {
-        $result = (new ArabicNormalizer())->normalize("\u{FDF2}");
+        $normalizer = new ArabicNormalizer();
+        $result = $normalizer->normalize("\u{FDF2}");
 
         self::assertSame('الله', $result);
         self::assertStringNotContainsString("\u{FDF2}", $result);
+        self::assertSame('لا', $normalizer->normalize("\u{FEFB}"));
     }
 
     public function testStripsBidiControlsAndVerseNumbers(): void

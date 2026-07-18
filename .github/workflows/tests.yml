@@ -16,7 +16,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: json, mbstring
+          extensions: :intl, :mbstring
           coverage: none
       - run: composer validate --strict
       - run: composer install --no-interaction --prefer-dist

@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Watheq\QuranValidator\Contracts;
 
 use Watheq\QuranValidator\ValueObjects\ArabicSegment;
+use Watheq\QuranValidator\ValueObjects\NormalizeOptions;
 
 interface ArabicNormalizerInterface
 {
-    public function normalize(string $text): string;
+    public function normalize(string $text, ?NormalizeOptions $options = null): string;
 
     public function normalizeForMatching(string $text): string;
 
