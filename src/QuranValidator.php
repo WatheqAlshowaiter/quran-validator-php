@@ -13,20 +13,26 @@ use Watheq\QuranValidator\ValueObjects\DetectionResult;
 use Watheq\QuranValidator\ValueObjects\DetectionSegment;
 use Watheq\QuranValidator\ValueObjects\FabricationAnalysis;
 use Watheq\QuranValidator\ValueObjects\QuranReference;
+use Watheq\QuranValidator\ValueObjects\QuranSurah;
 use Watheq\QuranValidator\ValueObjects\QuranVerse;
 use Watheq\QuranValidator\ValueObjects\SearchResult;
 use Watheq\QuranValidator\ValueObjects\ValidationResult;
+use Watheq\QuranValidator\ValueObjects\ValidatorOptions;
 use Watheq\QuranValidator\ValueObjects\WordAnalysis;
 
 final class QuranValidator
 {
+    private readonly ValidatorOptions $options;
+
     public function __construct(
         private readonly QuranRepositoryInterface $repository,
         private readonly ArabicNormalizerInterface $normalizer,
+        ?ValidatorOptions $options = null,
     ) {
+        $this->options = $options ?? new ValidatorOptions();
     }
 
-    public static function fromDefaultDataset(): self
+    public static function fromDefaultDataset(?ValidatorOptions $options = null): self
     {
         $normalizer = new ArabicNormalizer();
         $loader = new QuranDatasetLoader(
@@ -34,7 +40,7 @@ final class QuranValidator
             dirname(__DIR__).'/data/quran-surahs.min.json',
         );
 
-        return new self(new QuranRepository($loader, $normalizer), $normalizer);
+        return new self(new QuranRepository($loader, $normalizer), $normalizer, $options);
     }
 
     public function validate(string $text): ValidationResult
@@ -92,7 +98,7 @@ final class QuranValidator
         $detected = false;
 
         foreach ($this->normalizer->extractArabicSegments($text) as $segment) {
-            if (mb_strlen($segment->text) < 10) {
+            if (mb_strlen($segment->text) < $this->options->minDetectionLength) {
                 continue;
             }
 
@@ -124,6 +130,11 @@ final class QuranValidator
     public function range(string $reference): array
     {
         return $this->requireRange(QuranReference::parse($reference));
+    }
+
+    public function surah(int $number): ?QuranSurah
+    {
+        return $this->repository->surah($number);
     }
 
     /** @return list<SearchResult> */
@@ -197,7 +208,7 @@ final class QuranValidator
             $matches[0],
             $matches[0]->reference(),
             $normalized,
-            suggestions: array_slice($matches, 1, 3),
+            suggestions: array_slice($matches, 1, $this->options->maxSuggestions),
         );
     }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Watheq\QuranValidator\Contracts;
 
 use Watheq\QuranValidator\ValueObjects\QuranReference;
+use Watheq\QuranValidator\ValueObjects\QuranSurah;
 use Watheq\QuranValidator\ValueObjects\QuranVerse;
 
 interface QuranRepositoryInterface
@@ -24,4 +25,6 @@ interface QuranRepositoryInterface
     public function verses(): array;
 
     public function surahCount(): int;
+
+    public function surah(int $number): ?QuranSurah;
 }

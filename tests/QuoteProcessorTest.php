@@ -7,6 +7,7 @@ namespace Watheq\QuranValidator\Tests;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Watheq\QuranValidator\Exceptions\InvalidUtf8;
 use Watheq\QuranValidator\QuoteProcessor;
 use Watheq\QuranValidator\QuranValidator;
 
@@ -42,6 +43,33 @@ final class QuoteProcessorTest extends TestCase
         self::assertTrue($result->quotes()[0]->wasCorrected());
         self::assertStringContainsString($this->canonical('1:1'), $result->correctedText());
         self::assertSame($content, $result->originalText());
+    }
+
+    public function testInvalidReferenceIsReported(): void
+    {
+        $result = (new QuoteProcessor(QuranValidator::fromDefaultDataset()))
+            ->process('<quran ref="115:1">نص عربي</quran>');
+
+        self::assertCount(1, $result->quotes());
+        self::assertFalse($result->quotes()[0]->isValid());
+        self::assertNotNull($result->quotes()[0]->validation?->error);
+    }
+
+    public function testOverlappingQuotesAreProcessedOnce(): void
+    {
+        $verse = $this->canonical('1:1');
+        $result = (new QuoteProcessor(QuranValidator::fromDefaultDataset()))
+            ->process('<quran ref="1:1">'.$verse.' (1:1)</quran>');
+
+        self::assertCount(1, $result->quotes());
+        self::assertSame('xml', $result->quotes()[0]->format);
+    }
+
+    public function testInvalidUtf8IsRejected(): void
+    {
+        $this->expectException(InvalidUtf8::class);
+
+        (new QuoteProcessor(QuranValidator::fromDefaultDataset()))->process("\xB1\x31");
     }
 
     public function testAutoCorrectsNormalizedQuote(): void
@@ -106,10 +134,12 @@ final class QuoteProcessorTest extends TestCase
     public function testQuickValidateFindsQuranContent(): void
     {
         $result = QuoteProcessor::quickValidate(
-            '<quran ref="1:1">بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ</quran>',
+            '<quran ref="1:1">'.$this->canonical('1:1').'</quran>',
         );
 
         self::assertTrue($result['has_quran_content']);
+        self::assertTrue($result['all_valid']);
+        self::assertSame([], $result['issues']);
     }
 
     public function testQuickValidateFindsNoQuranContent(): void
@@ -128,5 +158,14 @@ final class QuoteProcessorTest extends TestCase
         self::assertTrue($result['has_quran_content']);
         self::assertFalse($result['all_valid']);
         self::assertNotEmpty($result['issues']);
+    }
+
+    public function testQuickValidateReportsNormalizedQuoteAsImprecise(): void
+    {
+        $result = QuoteProcessor::quickValidate('<quran ref="112:1">قل هو الله أحد</quran>');
+
+        self::assertTrue($result['has_quran_content']);
+        self::assertFalse($result['all_valid']);
+        self::assertStringContainsString('imprecise', $result['issues'][0]);
     }
 }

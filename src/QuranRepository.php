@@ -8,6 +8,7 @@ use Watheq\QuranValidator\Contracts\ArabicNormalizerInterface;
 use Watheq\QuranValidator\Contracts\QuranRepositoryInterface;
 use Watheq\QuranValidator\Data\QuranDatasetLoader;
 use Watheq\QuranValidator\ValueObjects\QuranReference;
+use Watheq\QuranValidator\ValueObjects\QuranSurah;
 use Watheq\QuranValidator\ValueObjects\QuranVerse;
 
 final class QuranRepository implements QuranRepositoryInterface
@@ -22,6 +23,8 @@ final class QuranRepository implements QuranRepositoryInterface
     private array $normalizedIndex = [];
     /** @var array<string, string> */
     private array $searchIndex = [];
+    /** @var array<int, QuranSurah> */
+    private array $surahIndex = [];
     private int $surahCount;
     private string $corpus;
 
@@ -30,6 +33,9 @@ final class QuranRepository implements QuranRepositoryInterface
         $data = $loader->load();
         $this->verses = $data['verses'];
         $this->surahCount = count($data['surahCounts']);
+        foreach ($data['surahs'] as $surah) {
+            $this->surahIndex[$surah->number] = $surah;
+        }
         $corpus = [];
 
         foreach ($this->verses as $verse) {
@@ -88,6 +94,11 @@ final class QuranRepository implements QuranRepositoryInterface
     public function surahCount(): int
     {
         return $this->surahCount;
+    }
+
+    public function surah(int $number): ?QuranSurah
+    {
+        return $this->surahIndex[$number] ?? null;
     }
 
     public function normalizedText(QuranVerse $verse): string

@@ -62,10 +62,6 @@ final class ArabicNormalizer implements ArabicNormalizerInterface
 
         foreach ($matches[0] as [$matched, $byteOffset]) {
             $segment = preg_replace('/^\s+|\s+$/u', '', $matched) ?? $matched;
-            if ($segment === '') {
-                continue;
-            }
-
             $segments[] = new ArabicSegment(
                 $segment,
                 mb_strlen(substr($text, 0, $byteOffset)),

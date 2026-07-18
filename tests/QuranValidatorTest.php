@@ -7,12 +7,15 @@ namespace Watheq\QuranValidator\Tests;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Watheq\QuranValidator\ArabicNormalizer;
+use Watheq\QuranValidator\Contracts\QuranRepositoryInterface;
 use Watheq\QuranValidator\Data\QuranDatasetLoader;
 use Watheq\QuranValidator\Exceptions\DatasetFileMissing;
 use Watheq\QuranValidator\Exceptions\InvalidQuranReference;
 use Watheq\QuranValidator\Exceptions\InvalidUtf8;
+use Watheq\QuranValidator\Exceptions\InvalidVerseRange;
 use Watheq\QuranValidator\QuranRepository;
 use Watheq\QuranValidator\QuranValidator;
+use Watheq\QuranValidator\ValueObjects\ValidatorOptions;
 
 final class QuranValidatorTest extends TestCase
 {
@@ -51,6 +54,7 @@ final class QuranValidatorTest extends TestCase
         self::assertTrue($exact->isValid());
         self::assertSame('exact', $exact->matchType());
         self::assertSame('1:1', $exact->reference());
+        self::assertSame($verse, $exact->matchedVerse());
         self::assertTrue($normalized->isValid());
         self::assertSame('normalized', $normalized->matchType());
         self::assertSame('1:1', $normalized->reference());
@@ -81,10 +85,6 @@ final class QuranValidatorTest extends TestCase
         self::assertFalse($this->validator->validate('بسم الله')->isValid());
         self::assertFalse($this->validator->validate('')->isValid());
     }
-
-    // Duplicate: testRejectPartialVerses() is covered by testInvalidAndPartialTextDoNotMatch().
-    // Duplicate: testEmptyString() is covered by testInvalidAndPartialTextDoNotMatch().
-    // Duplicate: testCommonAlefInsteadOfAlefWasla() is covered by testReferenceRegressions() ("Ikhlas").
 
     public function testNonArabicText(): void
     {
@@ -151,9 +151,49 @@ final class QuranValidatorTest extends TestCase
         $this->validator->verse('115:1');
     }
 
-    // Duplicate: testGetBySurahAyah() is covered by testLookupAndRange().
-    // Duplicate: testInvalidReference() is covered by testInvalidReferencesThrow().
-    // Not ported: testGetSurah(), testInvalidSurah(), and testAlBaqaraCount() require a public surah metadata API.
+    public function testVerseRejectsRangeReference(): void
+    {
+        $this->expectException(InvalidQuranReference::class);
+        $this->expectExceptionMessage('A single verse reference is required.');
+
+        $this->validator->verse('112:1-4');
+    }
+
+    public function testRangeRejectsMissingVerse(): void
+    {
+        $this->expectException(InvalidVerseRange::class);
+        $this->expectExceptionMessage('Quran verse range 114:7 does not exist.');
+
+        $this->validator->range('114:7');
+    }
+
+    public function testRangeRejectsDescendingReference(): void
+    {
+        $this->expectException(InvalidVerseRange::class);
+        $this->expectExceptionMessage('A verse range cannot end before it starts.');
+
+        $this->validator->range('1:2-1');
+    }
+
+    public function testReferenceRejectsInvalidFormat(): void
+    {
+        $this->expectException(InvalidQuranReference::class);
+        $this->expectExceptionMessage('Invalid Quran reference "invalid".');
+
+        $this->validator->verse('invalid');
+    }
+
+    public function testSurahMetadata(): void
+    {
+        $surah = $this->validator->surah(1);
+
+        self::assertNotNull($surah);
+        self::assertStringContainsString('الفاتحة', $surah->name);
+        self::assertSame('Al-Fatiha', $surah->englishName);
+        self::assertSame(7, $surah->versesCount);
+        self::assertSame(286, $this->validator->surah(2)?->versesCount);
+        self::assertNull($this->validator->surah(115));
+    }
 
     public function testSearchUsesArabicNormalization(): void
     {
@@ -170,7 +210,18 @@ final class QuranValidatorTest extends TestCase
         self::assertSame([], $this->validator->search('   '));
     }
 
-    // Duplicate: testSearchVerses(), testLimitResults(), testEmptyQuery(), and testWhitespaceQuery()
+    public function testSearchSupportsRepositoryInterfaceImplementations(): void
+    {
+        $verse = $this->validator->verse('1:1');
+        $repository = $this->createStub(QuranRepositoryInterface::class);
+        $repository->method('verses')->willReturn([$verse]);
+
+        $results = (new QuranValidator($repository, new ArabicNormalizer()))->search('بسم');
+
+        self::assertCount(1, $results);
+        self::assertSame($verse, $results[0]->verse);
+    }
+
     // are covered by testSearchUsesArabicNormalization().
 
     public function testFabricationAnalysis(): void
@@ -181,8 +232,6 @@ final class QuranValidatorTest extends TestCase
         self::assertTrue($analysis->words[2]->fabricated);
         self::assertSame(1, $analysis->fabricatedWords);
     }
-
-    // Duplicate: testFabricatedWords() is covered by testFabricationAnalysis().
 
     #[DataProvider('validFabricationTexts')]
     public function testValidFabricationTexts(string $text, int $wordCount): void
@@ -330,11 +379,14 @@ final class QuranValidatorTest extends TestCase
         self::assertSame([], $result->segments);
     }
 
-    // Not ported: the PHP API does not expose a configurable validator factory.
-    //
-    //class TestCreateValidator:
-    //def test_create_with_custom_options(self):
-    //from quran_validator.types import ValidatorOptions
-    //v = create_validator(ValidatorOptions(max_suggestions=5))
-    //assert isinstance(v, QuranValidator)
+    public function testCreatesValidatorWithCustomOptions(): void
+    {
+        $validator = QuranValidator::fromDefaultDataset(new ValidatorOptions(
+            maxSuggestions: 5,
+            minDetectionLength: 4,
+        ));
+
+        self::assertInstanceOf(QuranValidator::class, $validator);
+        self::assertCount(1, $validator->detectAndValidate('Just الله here')->segments);
+    }
 }

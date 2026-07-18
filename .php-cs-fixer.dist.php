@@ -11,6 +11,7 @@ return (new Config())
         '@PSR12' => true,
         '@PHP83Migration' => true,
         'declare_strict_types' => true,
+        'no_extra_blank_lines' => true,
         'ordered_imports' => true,
         'single_quote' => true,
     ])

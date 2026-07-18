@@ -7,6 +7,7 @@ namespace Watheq\QuranValidator\Data;
 use JsonException;
 use Watheq\QuranValidator\Exceptions\DatasetFileMissing;
 use Watheq\QuranValidator\Exceptions\InvalidDataset;
+use Watheq\QuranValidator\ValueObjects\QuranSurah;
 use Watheq\QuranValidator\ValueObjects\QuranVerse;
 
 final class QuranDatasetLoader
@@ -17,7 +18,7 @@ final class QuranDatasetLoader
     ) {
     }
 
-    /** @return array{verses: list<QuranVerse>, surahCounts: array<int, int>} */
+    /** @return array{verses: list<QuranVerse>, surahs: list<QuranSurah>, surahCounts: array<int, int>} */
     public function load(): array
     {
         $verseRows = $this->decode($this->versesFile);
@@ -28,12 +29,22 @@ final class QuranDatasetLoader
         }
 
         $surahCounts = [];
+        $surahs = [];
         foreach ($surahRows as $row) {
-            if (!is_array($row) || !isset($row['number'], $row['versesCount']) || !is_int($row['number']) || !is_int($row['versesCount'])
+            if (!is_array($row) || !isset($row['number'], $row['name'], $row['englishName'], $row['versesCount'], $row['revelationType'])
+                || !is_int($row['number']) || !is_string($row['name']) || !is_string($row['englishName'])
+                || !is_int($row['versesCount']) || !is_string($row['revelationType'])
                 || $row['number'] < 1 || $row['number'] > 114 || $row['versesCount'] < 1 || isset($surahCounts[$row['number']])) {
                 throw new InvalidDataset('Invalid surah dataset structure.');
             }
             $surahCounts[$row['number']] = $row['versesCount'];
+            $surahs[] = new QuranSurah(
+                $row['number'],
+                $row['name'],
+                $row['englishName'],
+                $row['versesCount'],
+                $row['revelationType'],
+            );
         }
 
         $verses = [];
@@ -69,7 +80,7 @@ final class QuranDatasetLoader
             }
         }
 
-        return ['verses' => $verses, 'surahCounts' => $surahCounts];
+        return ['verses' => $verses, 'surahs' => $surahs, 'surahCounts' => $surahCounts];
     }
 
     /** @return list<mixed> */
