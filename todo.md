@@ -10,8 +10,9 @@
   - [ ] validator.py
   - [ ] llm_integration.py 
   - [ ] init __all__
-- [ ] make another package or a way for other قراءات like Warsh and Qalon.
 - [ ] make sure it is equal to js port exactly
+  - the same as python port
+- [ ] make another package or a way for other قراءات like Warsh and Qalon. link https://github.com/yazinsai/quran-validator/commit/ebb2c56d18dd9f75ea2755beddab084138abc60c
 - [ ] make better github actions inspired by https://github.com/nunomaduro/skeleton-php/blob/master/.github/workflows/tests.yml & https://github.com/spatie/package-skeleton-php/blob/main/.github/workflows/fix-php-code-style-issues-pint.yml
 - [ ] make the GitHub actions 2 – one for test, the other for formatting
 - [ ] make better documentation with a lot of examples
