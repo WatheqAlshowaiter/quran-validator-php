@@ -6,14 +6,11 @@ namespace Watheq\QuranValidator\Tests;
 
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Watheq\QuranValidator\ArabicNormalizer;
-use Watheq\QuranValidator\Contracts\QuranRepositoryInterface;
 use Watheq\QuranValidator\Data\QuranDatasetLoader;
 use Watheq\QuranValidator\Exceptions\DatasetFileMissing;
 use Watheq\QuranValidator\Exceptions\InvalidQuranReference;
 use Watheq\QuranValidator\Exceptions\InvalidUtf8;
 use Watheq\QuranValidator\Exceptions\InvalidVerseRange;
-use Watheq\QuranValidator\QuranRepository;
 use Watheq\QuranValidator\QuranValidator;
 use Watheq\QuranValidator\ValueObjects\ValidatorOptions;
 
@@ -28,15 +25,14 @@ final class QuranValidatorTest extends TestCase
 
     public function testDatasetIntegrity(): void
     {
-        $normalizer = new ArabicNormalizer();
-        $repository = new QuranRepository(new QuranDatasetLoader(
+        $data = (new QuranDatasetLoader(
             dirname(__DIR__).'/data/quran-verses.min.json',
             dirname(__DIR__).'/data/quran-surahs.min.json',
-        ), $normalizer);
+        ))->load();
 
-        self::assertCount(6236, $repository->verses());
-        self::assertSame(114, $repository->surahCount());
-        self::assertSame('114:6', $repository->verses()[6235]->reference());
+        self::assertCount(6236, $data['verses']);
+        self::assertCount(114, $data['surahs']);
+        self::assertSame('114:6', $data['verses'][6235]->reference());
     }
 
     public function testMissingDatasetFailsClearly(): void
@@ -209,20 +205,6 @@ final class QuranValidatorTest extends TestCase
         self::assertSame([], $this->validator->search(''));
         self::assertSame([], $this->validator->search('   '));
     }
-
-    public function testSearchSupportsRepositoryInterfaceImplementations(): void
-    {
-        $verse = $this->validator->verse('1:1');
-        $repository = $this->createStub(QuranRepositoryInterface::class);
-        $repository->method('verses')->willReturn([$verse]);
-
-        $results = (new QuranValidator($repository, new ArabicNormalizer()))->search('بسم');
-
-        self::assertCount(1, $results);
-        self::assertSame($verse, $results[0]->verse);
-    }
-
-    // are covered by testSearchUsesArabicNormalization().
 
     public function testFabricationAnalysis(): void
     {

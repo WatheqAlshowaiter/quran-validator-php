@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Watheq\QuranValidator;
 
 use Watheq\QuranValidator\Contracts\ArabicNormalizerInterface;
-use Watheq\QuranValidator\Contracts\QuranRepositoryInterface;
 use Watheq\QuranValidator\Data\QuranDatasetLoader;
 use Watheq\QuranValidator\Exceptions\InvalidQuranReference;
 use Watheq\QuranValidator\Exceptions\InvalidVerseRange;
@@ -24,12 +23,57 @@ final class QuranValidator
 {
     private readonly ValidatorOptions $options;
 
+    /** @var list<QuranVerse> */
+    private array $verses;
+
+    /** @var array<string, QuranVerse> */
+    private array $verseIndex = [];
+
+    /** @var array<string, list<QuranVerse>> */
+    private array $exactIndex = [];
+
+    /** @var array<string, list<QuranVerse>> */
+    private array $normalizedIndex = [];
+
+    /** @var array<string, string> */
+    private array $searchIndex = [];
+
+    /** @var array<int, QuranSurah> */
+    private array $surahIndex = [];
+
+    private string $corpus;
+
     public function __construct(
-        private readonly QuranRepositoryInterface $repository,
+        QuranDatasetLoader $loader,
         private readonly ArabicNormalizerInterface $normalizer,
         ?ValidatorOptions $options = null,
     ) {
         $this->options = $options ?? new ValidatorOptions();
+        $data = $loader->load();
+        $this->verses = $data['verses'];
+
+        foreach ($data['surahs'] as $surah) {
+            $this->surahIndex[$surah->number] = $surah;
+        }
+
+        $corpus = [];
+        foreach ($this->verses as $verse) {
+            $this->verseIndex[$verse->reference()] = $verse;
+            $this->exactIndex[$verse->text][] = $verse;
+            $normalized = $this->normalizer->normalizeForMatching($verse->text);
+            $this->normalizedIndex[$normalized][] = $verse;
+            $simpleNormalized = $this->normalizer->normalizeForMatching($verse->simpleText);
+            if ($simpleNormalized !== $normalized) {
+                $this->normalizedIndex[$simpleNormalized][] = $verse;
+            }
+            $this->searchIndex[$verse->reference()] = $simpleNormalized;
+            $corpus[] = $normalized;
+            if ($simpleNormalized !== $normalized) {
+                $corpus[] = $simpleNormalized;
+            }
+        }
+
+        $this->corpus = ' '.implode(' ', $corpus).' ';
     }
 
     public static function fromDefaultDataset(?ValidatorOptions $options = null): self
@@ -40,9 +84,16 @@ final class QuranValidator
             dirname(__DIR__).'/data/quran-surahs.min.json',
         );
 
-        return new self(new QuranRepository($loader, $normalizer), $normalizer, $options);
+        return new self($loader, $normalizer, $options);
     }
 
+    /**
+     * Validate a potential Quran quote.
+     *
+     * @param string $text Arabic text to validate.
+     *
+     * @return ValidationResult Validation result with match details.
+     */
     public function validate(string $text): ValidationResult
     {
         $text = trim($text);
@@ -51,12 +102,12 @@ final class QuranValidator
             return new ValidationResult(false, 'none', normalizedInput: $normalized);
         }
 
-        $matches = $this->repository->exact($text);
+        $matches = $this->exactIndex[$text] ?? [];
         if ($matches !== []) {
             return $this->validResult($matches, 'exact', $normalized);
         }
 
-        $matches = $this->repository->normalized($this->normalizer->normalizeForMatching($text));
+        $matches = $this->normalizedIndex[$this->normalizer->normalizeForMatching($text)] ?? [];
 
         return $matches === []
             ? new ValidationResult(false, 'none', normalizedInput: $normalized)
@@ -122,7 +173,7 @@ final class QuranValidator
             throw new InvalidQuranReference('A single verse reference is required.');
         }
 
-        return $this->repository->verse($parsed)
+        return $this->verseIndex[$parsed->surah.':'.$parsed->startAyah]
             ?? throw new InvalidQuranReference(sprintf('Quran verse %s does not exist.', $reference));
     }
 
@@ -134,7 +185,7 @@ final class QuranValidator
 
     public function surah(int $number): ?QuranSurah
     {
-        return $this->repository->surah($number);
+        return $this->surahIndex[$number] ?? null;
     }
 
     /** @return list<SearchResult> */
@@ -146,10 +197,8 @@ final class QuranValidator
         }
 
         $results = [];
-        foreach ($this->repository->verses() as $verse) {
-            $text = $this->repository instanceof QuranRepository
-                ? $this->repository->normalizedText($verse)
-                : $this->normalizer->normalize($verse->text);
+        foreach ($this->verses as $verse) {
+            $text = $this->searchIndex[$verse->reference()];
 
             if (mb_strpos($text, $query) !== false) {
                 $results[] = new SearchResult($verse, 0.7 + (mb_strlen($query) / mb_strlen($text) * 0.3));
@@ -171,12 +220,11 @@ final class QuranValidator
 
         for ($index = 0, $count = count($matchingWords); $index < $count;) {
             $best = 0;
-            if ($this->repository instanceof QuranRepository) {
-                for ($length = $count - $index; $length > 0; --$length) {
-                    if ($this->repository->corpusContains(implode(' ', array_slice($matchingWords, $index, $length)))) {
-                        $best = $length;
-                        break;
-                    }
+            for ($length = $count - $index; $length > 0; --$length) {
+                $candidate = implode(' ', array_slice($matchingWords, $index, $length));
+                if (mb_strpos($this->corpus, ' '.$candidate.' ') !== false) {
+                    $best = $length;
+                    break;
                 }
             }
 
@@ -215,7 +263,15 @@ final class QuranValidator
     /** @return list<QuranVerse> */
     private function requireRange(QuranReference $reference): array
     {
-        $verses = $this->repository->range($reference);
+        $verses = [];
+        for ($ayah = $reference->startAyah; $ayah <= $reference->endAyah; ++$ayah) {
+            $verse = $this->verseIndex[$reference->surah.':'.$ayah] ?? null;
+            if ($verse === null) {
+                $verses = [];
+                break;
+            }
+            $verses[] = $verse;
+        }
         if ($verses === []) {
             throw new InvalidVerseRange(sprintf('Quran verse range %s does not exist.', $reference));
         }
