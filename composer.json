@@ -57,7 +57,7 @@
     "test:coverage": "phpunit --coverage-text",
     "types": "phpstan analyse",
     "format": "php-cs-fixer fix --diff",
-    "format:check": "php-cs-fixer fix --dry-run --diff",
+    "format:check": "php-cs-fixer fix --dry-run --diff"
   },
   "suggest": {
     "ext-mbstring": "Provides faster native multibyte string handling.",
