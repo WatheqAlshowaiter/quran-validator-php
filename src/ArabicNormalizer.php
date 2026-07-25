@@ -130,8 +130,7 @@ final class ArabicNormalizer implements ArabicNormalizerInterface
             $text = preg_replace(self::PUNCTUATION, '', $text) ?? $text;
         }
 
-        if ($options->stripHamza) {
-            $text = preg_replace(self::HAMZA_TO_STRIP, '', $text) ?? $text;
+        if ($options->stripHamza) {$text = preg_replace(self::HAMZA_TO_STRIP, '', $text) ?? $text;
             $text = preg_replace(self::ALEF_MAQSURA, 'ي', $text) ?? $text;
             $text = preg_replace(self::UTHMANI_WAW_TA, 'اة', $text) ?? $text;
             $text = preg_replace(self::DOUBLE_YA, 'ي', $text) ?? $text;
