@@ -21,6 +21,30 @@ final class DetectedQuote
     ) {
     }
 
+    /** Return the original quote text. */
+    public function original(): string
+    {
+        return $this->text;
+    }
+
+    /** Return the corrected quote text, when available. */
+    public function corrected(): string
+    {
+        return $this->correctedText ?? $this->text;
+    }
+
+    /** Return the normalized input used for validation. */
+    public function normalizedInput(): ?string
+    {
+        return $this->validation?->normalizedInput;
+    }
+
+    /** Return the normalized expected text, when available. */
+    public function expectedNormalized(): ?string
+    {
+        return $this->validation?->expectedNormalized;
+    }
+
     /** Return whether the value represents valid Quran content. */
     public function isValid(): bool
     {

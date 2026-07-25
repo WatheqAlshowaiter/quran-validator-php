@@ -33,6 +33,24 @@ final class ProcessingResult
         return $this->quotes;
     }
 
+    /** Return whether every quote is valid and unchanged. */
+    public function allValid(): bool
+    {
+        foreach ($this->quotes as $quote) {
+            if (!$quote->isValid() || $quote->wasCorrected()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /** @return list<string> */
+    public function warnings(): array
+    {
+        return [];
+    }
+
     /** Return whether processing found invalid quotes. */
     public function hasErrors(): bool
     {
