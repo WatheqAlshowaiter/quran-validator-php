@@ -102,7 +102,8 @@ final class ArabicNormalizer implements ArabicNormalizerInterface
      */
     private function _normalizeCore(string $text, NormalizeOptions $options): string
     {
-        if ($options->diacritics) {$text = preg_replace(self::DIACRITICS, '', $text) ?? $text;
+        if ($options->diacritics) {
+            $text = preg_replace(self::DIACRITICS, '', $text) ?? $text;
             $text = preg_replace(self::ALIF_MADDA, 'ا', $text) ?? $text;
             $text = preg_replace(self::ALIF_WASLA, 'ا', $text) ?? $text;
             $text = preg_replace(self::ALIF_VARIANTS, 'ا', $text) ?? $text;
