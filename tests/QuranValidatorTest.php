@@ -12,6 +12,7 @@ use Watheq\QuranValidator\Exceptions\InvalidQuranReference;
 use Watheq\QuranValidator\Exceptions\InvalidUtf8;
 use Watheq\QuranValidator\Exceptions\InvalidVerseRange;
 use Watheq\QuranValidator\QuranValidator;
+use Watheq\QuranValidator\ValueObjects\QuranReference;
 use Watheq\QuranValidator\ValueObjects\ValidatorOptions;
 
 final class QuranValidatorTest extends TestCase
@@ -88,6 +89,20 @@ final class QuranValidatorTest extends TestCase
 
         self::assertFalse($result->isValid());
         self::assertSame('none', $result->matchType());
+    }
+
+    public function testQuranReferenceValueObject(): void
+    {
+        $single = QuranReference::parse('1:1');
+        self::assertSame(1, $single->surah);
+        self::assertSame(1, $single->startAyah);
+        self::assertSame(1, $single->endAyah);
+        self::assertFalse($single->isRange());
+        self::assertSame('1:1', (string) $single);
+
+        $range = QuranReference::parse('2:255-257');
+        self::assertTrue($range->isRange());
+        self::assertSame('2:255-257', (string) $range);
     }
 
     public function testReferenceValidationAndMismatchDetails(): void

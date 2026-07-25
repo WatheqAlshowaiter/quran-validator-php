@@ -186,6 +186,15 @@ final class ArabicNormalizerTest extends TestCase
         self::assertSame('له', $differences[0]->input);
         self::assertSame('رحمن', $differences[0]->correct);
         self::assertSame(6, $differences[0]->position);
+
+        $separated = (new ArabicNormalizer())->findDifferences('abXcdY', 'ab1cd2');
+        self::assertCount(2, $separated);
+        self::assertSame('X', $separated[0]->input);
+        self::assertSame('1', $separated[0]->correct);
+        self::assertSame(2, $separated[0]->position);
+        self::assertSame('Y', $separated[1]->input);
+        self::assertSame('2', $separated[1]->correct);
+        self::assertSame(5, $separated[1]->position);
     }
 
 }

@@ -10,7 +10,13 @@ use PHPUnit\Framework\TestCase;
 use Watheq\QuranValidator\Exceptions\InvalidUtf8;
 use Watheq\QuranValidator\LlmIntegration;
 use Watheq\QuranValidator\QuranValidator;
+use Watheq\QuranValidator\ValueObjects\DetectedQuote;
 use Watheq\QuranValidator\ValueObjects\LlmIntegrationOptions;
+use Watheq\QuranValidator\ValueObjects\MatchType;
+use Watheq\QuranValidator\ValueObjects\NormalizeOptions;
+use Watheq\QuranValidator\ValueObjects\ProcessingResult;
+use Watheq\QuranValidator\ValueObjects\SearchResult;
+use Watheq\QuranValidator\ValueObjects\ValidationResult;
 
 final class QuoteProcessorTest extends TestCase
 {
@@ -113,6 +119,122 @@ final class QuoteProcessorTest extends TestCase
         self::assertStringContainsString('Untagged Quran quote detected', $result->warnings()[0]);
     }
 
+    public function testDetectedQuoteAccessors(): void
+    {
+        $plain = new DetectedQuote('text', '1:1', 'xml', 0, 4, 0, 4);
+
+        self::assertSame('text', $plain->original());
+        self::assertSame('text', $plain->corrected());
+        self::assertNull($plain->normalizedInput());
+        self::assertNull($plain->expectedNormalized());
+        self::assertFalse($plain->isValid());
+        self::assertFalse($plain->wasCorrected());
+
+        $normalized = new DetectedQuote(
+            'text',
+            '1:1',
+            'xml',
+            0,
+            4,
+            0,
+            4,
+            new ValidationResult(
+                valid: true,
+                matchType: MatchType::NORMALIZED,
+                normalizedInput: 'normalized',
+                expectedNormalized: 'expected',
+            ),
+            'fixed',
+        );
+
+        self::assertSame('fixed', $normalized->corrected());
+        self::assertSame('normalized', $normalized->normalizedInput());
+        self::assertSame('expected', $normalized->expectedNormalized());
+        self::assertTrue($normalized->isValid());
+        self::assertTrue($normalized->wasCorrected());
+    }
+
+    public function testValueObjectOptionsAndValidationTypes(): void
+    {
+        $options = new LlmIntegrationOptions(autoCorrect: false, scanUntagged: false, tagFormat: 'markdown');
+        self::assertFalse($options->autoCorrect);
+        self::assertFalse($options->scanUntagged);
+        self::assertSame('markdown', $options->tagFormat);
+
+        $normalization = new NormalizeOptions(stripHamza: true);
+        self::assertTrue($normalization->diacritics);
+        self::assertTrue($normalization->stripHamza);
+
+        $result = new ValidationResult(valid: true, matchType: MatchType::EXACT, reference: '1:1');
+        self::assertTrue($result->isValid());
+        self::assertSame('exact', $result->matchType());
+        self::assertSame(MatchType::EXACT, $result->matchTypeEnum());
+        self::assertSame('1:1', $result->reference());
+    }
+
+    public function testRejectsUnsupportedLlmTagFormat(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        new LlmIntegrationOptions(tagFormat: 'plain');
+    }
+
+    public function testProcessingResultAccessorsAndStatus(): void
+    {
+        $validQuote = new DetectedQuote(
+            'text',
+            '1:1',
+            'xml',
+            0,
+            4,
+            0,
+            4,
+            new ValidationResult(valid: true, matchType: MatchType::EXACT),
+        );
+        $result = new ProcessingResult('original', 'corrected', [$validQuote], ['warning']);
+
+        self::assertSame('original', $result->originalText());
+        self::assertSame('corrected', $result->correctedText());
+        self::assertSame([$validQuote], $result->quotes());
+        self::assertTrue($result->allValid());
+        self::assertSame(['warning'], $result->warnings());
+        self::assertFalse($result->hasErrors());
+
+        $invalidQuote = new DetectedQuote('text', '1:1', 'xml', 0, 4, 0, 4, new ValidationResult(valid: false, matchType: MatchType::NONE));
+        $invalidResult = new ProcessingResult('text', 'text', [$invalidQuote]);
+        self::assertFalse($invalidResult->allValid());
+        self::assertTrue($invalidResult->hasErrors());
+    }
+
+    public function testValidateQuoteHelper(): void
+    {
+        $processor = new LlmIntegration(QuranValidator::fromDefaultDataset());
+        $valid = $processor->validateQuote('قُلْ هُوَ ٱللَّهُ أَحَدٌ', '112:1');
+        self::assertTrue($valid['is_valid']);
+        self::assertSame('112:1', $valid['actual_ref'] ?? null);
+
+        $mismatch = $processor->validateQuote('قُلْ هُوَ ٱللَّهُ أَحَدٌ', '1:1');
+        self::assertFalse($mismatch['is_valid']);
+        self::assertSame('112:1', $mismatch['actual_ref'] ?? null);
+
+        self::assertFalse($processor->validateQuote('not Quranic text')['is_valid']);
+
+        $normalized = $processor->validateQuote('قل هو الله أحد', '112:1');
+        self::assertTrue($normalized['is_valid']);
+        self::assertSame(
+            QuranValidator::fromDefaultDataset()->verse('112:1')->text,
+            $normalized['correct_text'] ?? null,
+        );
+    }
+
+    public function testSearchResultValueObject(): void
+    {
+        $verse = QuranValidator::fromDefaultDataset()->verse('1:1');
+        $result = new SearchResult($verse, 0.85);
+
+        self::assertSame($verse, $result->verse);
+        self::assertSame(0.85, $result->score);
+    }
+
     private function canonical(): string
     {
         return QuranValidator::fromDefaultDataset()->verse('1:1')->text;
@@ -134,6 +256,54 @@ final class QuoteProcessorTest extends TestCase
         self::assertCount(1, $result->quotes());
         self::assertSame('contextual', $result->quotes()[0]->detectionMethod);
         self::assertTrue($result->quotes()[0]->isValid());
+    }
+
+    public function testInvalidContextualTextIsIgnored(): void
+    {
+        $processor = LlmIntegration::create(new LlmIntegrationOptions(scanUntagged: false));
+        $result = $processor->process('Allah says: بسم الله الكريم');
+
+        self::assertSame([], $result->quotes());
+    }
+
+    public function testShortContextualTextIsIgnored(): void
+    {
+        $processor = LlmIntegration::create(new LlmIntegrationOptions(scanUntagged: false));
+
+        self::assertSame([], $processor->process('Allah says: الله')->quotes());
+    }
+
+    public function testNormalizedContextualQuoteIsCorrected(): void
+    {
+        $processor = LlmIntegration::create(new LlmIntegrationOptions(
+            autoCorrect: true,
+            scanUntagged: false,
+        ));
+        $quote = $processor->process('Allah says: قل هو الله أحد')->quotes()[0];
+
+        self::assertTrue($quote->isValid());
+        self::assertSame(QuranValidator::fromDefaultDataset()->verse('112:1')->text, $quote->correctedText);
+    }
+
+    public function testExactContextualQuoteHasNoCorrection(): void
+    {
+        $processor = LlmIntegration::create(new LlmIntegrationOptions(
+            autoCorrect: true,
+            scanUntagged: false,
+        ));
+        $quote = $processor->process('Allah says: '.$this->canonical())->quotes()[0];
+
+        self::assertTrue($quote->isValid());
+        self::assertNull($quote->correctedText);
+    }
+
+    public function testExactUntaggedQuoteHasNoCorrection(): void
+    {
+        $processor = LlmIntegration::create(new LlmIntegrationOptions(autoCorrect: true));
+        $quote = $processor->process($this->canonical())->quotes()[0];
+
+        self::assertTrue($quote->isValid());
+        self::assertNull($quote->correctedText);
     }
 
     public function testGetSystemPrompt(): void
