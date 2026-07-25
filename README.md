@@ -53,7 +53,7 @@ Normalization is for comparison, not transliteration or scholarly textual transf
 - `detectAndValidate(string): DetectionResult`
 - `verse(string): QuranVerse`
 - `range(string): list<QuranVerse>`
-- `search(string, int = 10): list<array{verse: QuranVerse, similarity: float}>`
+- `search(string, int = 10): list<SearchResult>`
 - `analyzeFabrication(string): FabricationAnalysis`
 - `LlmIntegration::process(string): ProcessingResult`
 - `LlmIntegration::getSystemPrompt(string = "xml"): string`
@@ -65,9 +65,11 @@ Expected invalid quotations return result objects. Malformed or missing referenc
 
 ```bash
 composer install # install dependencies
-composer check # check correction of code 
+composer test # run the test suite
+composer types # run PHPStan
+composer format:check # check code formatting
 composer test:coverage # run tests with code coverage
-composer validate --strict # validate composer.json file 
+composer validate --strict # validate composer.json
 ```
 
 ## QuranValidator.com
