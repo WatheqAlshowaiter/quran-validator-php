@@ -57,6 +57,7 @@
     "test:coverage": "phpunit --coverage-text",
     "types": "phpstan analyse",
     "format": "php-cs-fixer fix --diff",
+    "format:check": "php-cs-fixer fix --dry-run --diff",
     "check": [
       "@test",
       "@types"

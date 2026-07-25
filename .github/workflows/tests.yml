@@ -45,8 +45,5 @@ jobs:
       - name: Install Composer dependencies
         run: composer update --${{ matrix.dependency-version }} --no-interaction --prefer-dist
 
-      - name: Run PHPUnit
-        run: vendor/bin/phpunit
-
-      - name: Run PHPStan
-        run: vendor/bin/phpstan analyse
+      - name: Run Tests
+        run: composer check
