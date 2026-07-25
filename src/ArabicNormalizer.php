@@ -180,7 +180,7 @@ final class ArabicNormalizer implements ArabicNormalizerInterface
         /** @noinspection PhpMultipleClassDeclarationsInspection */
         // NFKC decomposes Arabic presentation forms such as ﷲ and ﻻ.
         $normalized = Normalizer::normalize($text, Normalizer::FORM_KC);
-        $text = $normalized === false ? $text : $normalized;
+        $text = is_string($normalized) ? $normalized : $text;
 
         // Controls never carry Quran text and are removed regardless of options.
         $text = preg_replace(self::BIDI_CONTROLS, '', $text) ?? $text;
