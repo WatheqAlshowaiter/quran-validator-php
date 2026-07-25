@@ -11,10 +11,11 @@ final class ProcessingResult
         private readonly string $originalText,
         private readonly string $correctedText,
         private readonly array $quotes,
+        /** @var list<string> */
+        private readonly array $warnings = [],
     ) {
     }
 
-    /** Return the original processed text. */
     /** Return the original processed text. */
     public function originalText(): string
     {
@@ -48,7 +49,7 @@ final class ProcessingResult
     /** @return list<string> */
     public function warnings(): array
     {
-        return [];
+        return $this->warnings;
     }
 
     /** Return whether processing found invalid quotes. */

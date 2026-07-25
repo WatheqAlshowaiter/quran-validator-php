@@ -18,6 +18,7 @@ final class DetectedQuote
         public readonly ?ValidationResult $validation = null,
         public readonly ?string $correctedText = null,
         public readonly string $detectionMethod = 'tagged',
+        public readonly bool $wasCorrected = false,
     ) {
     }
 
@@ -54,6 +55,7 @@ final class DetectedQuote
     /** Return whether automatic correction was applied. */
     public function wasCorrected(): bool
     {
-        return $this->correctedText !== null && $this->correctedText !== $this->text;
+        return $this->wasCorrected
+            || ($this->correctedText !== null && $this->correctedText !== $this->text);
     }
 }

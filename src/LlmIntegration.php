@@ -16,6 +16,7 @@ use Watheq\QuranValidator\Parsing\XmlQuoteParser;
 use Watheq\QuranValidator\ValueObjects\DetectedQuote;
 use Watheq\QuranValidator\ValueObjects\LlmIntegrationOptions;
 use Watheq\QuranValidator\ValueObjects\ProcessingResult;
+use Watheq\QuranValidator\ValueObjects\QuranReference;
 use Watheq\QuranValidator\ValueObjects\QuranVerse;
 use Watheq\QuranValidator\ValueObjects\ValidationResult;
 
@@ -150,13 +151,28 @@ final class LlmIntegration
             }
             $lastEnd = $quote->end;
 
+            $wasCorrected = false;
             try {
                 $validation = $this->validator->validateAgainst($quote->text, $quote->reference);
                 $canonical = implode(' ', array_map(
                     static fn (QuranVerse $verse): string => $verse->text,
                     $this->validator->range($quote->reference),
                 ));
-                $correction = $this->options->autoCorrect && $canonical !== $quote->text ? $canonical : null;
+
+                $parsedReference = QuranReference::parse($quote->reference);
+                if (!$validation->isValid() && !$parsedReference->isRange()) {
+                    $global = $this->validator->validate($quote->text);
+                    if ($global->isValid() && $global->matchedVerse() !== null) {
+                        $validation = $global;
+                        $canonical = $global->matchedVerse()->text;
+                        $wasCorrected = true;
+                    }
+                }
+
+                if ($validation->isValid() && $validation->matchType() !== 'exact') {
+                    $wasCorrected = true;
+                }
+                $correction = $this->options->autoCorrect && $wasCorrected ? $canonical : null;
             } catch (InvalidQuranReference|InvalidVerseRange $exception) {
                 $validation = new ValidationResult(
                     valid: false,
@@ -167,9 +183,10 @@ final class LlmIntegration
                 $correction = null;
             }
 
+            $effectiveReference = $validation->reference() ?? $quote->reference;
             $quotes[] = new DetectedQuote(
                 text: $quote->text,
-                reference: $quote->reference,
+                reference: $effectiveReference,
                 format: $quote->format,
                 start: $quote->start,
                 end: $quote->end,
@@ -177,6 +194,7 @@ final class LlmIntegration
                 textEnd: $quote->textEnd,
                 validation: $validation,
                 correctedText: $correction,
+                wasCorrected: $wasCorrected,
             );
         }
 
@@ -186,6 +204,7 @@ final class LlmIntegration
                 continue;
             }
             $matchedVerse = $validation->matchedVerse();
+            $wasCorrected = $validation->matchType() !== 'exact';
             $correction = $this->options->autoCorrect
                 && $validation->matchType() !== 'exact'
                 && $matchedVerse !== null
@@ -202,12 +221,16 @@ final class LlmIntegration
                 validation: $validation,
                 correctedText: $correction,
                 detectionMethod: 'contextual',
+                wasCorrected: $wasCorrected,
             );
         }
 
         // Scan untagged Arabic segments and skip overlaps with tagged quotes.
         if ($this->options->scanUntagged) {
             foreach ($this->validator->detectAndValidate($content)->segments as $segment) {
+                if (mb_strlen($segment->text) < 15) {
+                    continue;
+                }
                 $overlaps = array_filter($quotes, static fn (
                     DetectedQuote $quote
                 ): bool => ($segment->start >= $quote->start && $segment->start < $quote->end)
@@ -217,6 +240,7 @@ final class LlmIntegration
                 }
 
                 $matchedVerse = $segment->validation->matchedVerse();
+                $wasCorrected = $segment->validation->matchType() !== 'exact';
                 $correction = $this->options->autoCorrect
                 && $segment->validation->matchType() !== 'exact'
                 && $matchedVerse !== null
@@ -233,6 +257,7 @@ final class LlmIntegration
                     validation: $segment->validation,
                     correctedText: $correction,
                     detectionMethod: 'fuzzy',
+                    wasCorrected: $wasCorrected,
                 );
             }
             usort($quotes, static fn (DetectedQuote $a, DetectedQuote $b): int => $a->start <=> $b->start);
@@ -251,7 +276,18 @@ final class LlmIntegration
             }
         }
 
-        return new ProcessingResult($content, $corrected, $quotes);
+        $warnings = [];
+        foreach ($quotes as $quote) {
+            if ($quote->detectionMethod === 'fuzzy') {
+                $warnings[] = sprintf(
+                    'Untagged Quran quote detected: "%s..." (%s)',
+                    mb_substr($quote->text, 0, 50),
+                    $quote->reference,
+                );
+            }
+        }
+
+        return new ProcessingResult($content, $corrected, $quotes, $warnings);
     }
 
     /**

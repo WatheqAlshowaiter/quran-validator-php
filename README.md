@@ -38,7 +38,7 @@ $processed = (new LlmIntegration($validator))->process(
 );
 ```
 
-`QuoteProcessor` recognizes XML, Markdown fences, `[[Q:reference|text]]` brackets, and `Arabic text (reference)` inline citations in the same input. It reports invalid quotes and, when a valid intended reference exists, replaces their text with the canonical bundled text.
+`LlmIntegration` recognizes XML, Markdown fences, `[[Q:reference|text]]` brackets, and `Arabic text (reference)` inline citations in the same input. It reports invalid quotes and can replace valid imprecise quotes with the canonical bundled text.
 
 ## Normalization
 
@@ -55,9 +55,9 @@ Normalization is for comparison, not transliteration or scholarly textual transf
 - `range(string): list<QuranVerse>`
 - `search(string, int = 10): list<array{verse: QuranVerse, similarity: float}>`
 - `analyzeFabrication(string): FabricationAnalysis`
-- `QuoteProcessor::process(string): ProcessingResult`
-- `QuoteProcessor::getSystemPrompt(string = "xml"): string`
-- `QuoteProcessor::quickValidate(string): array`
+- `LlmIntegration::process(string): ProcessingResult`
+- `LlmIntegration::getSystemPrompt(string = "xml"): string`
+- `LlmIntegration::quickValidate(string): array`
 
 Expected invalid quotations return result objects. Malformed or missing references/ranges and invalid datasets throw focused exceptions.
 

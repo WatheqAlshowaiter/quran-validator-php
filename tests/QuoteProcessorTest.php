@@ -41,8 +41,8 @@ final class QuoteProcessorTest extends TestCase
         self::assertCount(1, $result->quotes());
         self::assertFalse($result->quotes()[0]->isValid());
         self::assertTrue($result->hasErrors());
-        self::assertTrue($result->quotes()[0]->wasCorrected());
-        self::assertStringContainsString($this->canonical(), $result->correctedText());
+        self::assertFalse($result->quotes()[0]->wasCorrected());
+        self::assertSame($content, $result->correctedText());
         self::assertSame($content, $result->originalText());
     }
 
@@ -91,6 +91,26 @@ final class QuoteProcessorTest extends TestCase
         $result = (new LlmIntegration($validator))->process('<quran ref="112:1-4">'.$text.'</quran>');
         self::assertTrue($result->quotes()[0]->isValid());
         self::assertSame('112:1-4', $result->quotes()[0]->reference);
+    }
+
+    public function testWrongReferenceUsesActualVerse(): void
+    {
+        $content = '<quran ref="1:1">قُلْ هُوَ ٱللَّهُ أَحَدٌ</quran>';
+        $result = (new LlmIntegration(QuranValidator::fromDefaultDataset()))->process($content);
+
+        self::assertTrue($result->quotes()[0]->isValid());
+        self::assertSame('112:1', $result->quotes()[0]->reference);
+        self::assertTrue($result->quotes()[0]->wasCorrected());
+    }
+
+    public function testUntaggedQuotesProduceWarnings(): void
+    {
+        $result = (new LlmIntegration(QuranValidator::fromDefaultDataset()))->process(
+            'Some text: قُلْ هُوَ ٱللَّهُ أَحَدٌ',
+        );
+
+        self::assertNotEmpty($result->warnings());
+        self::assertStringContainsString('Untagged Quran quote detected', $result->warnings()[0]);
     }
 
     private function canonical(): string
