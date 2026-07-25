@@ -69,6 +69,7 @@ final class QuoteProcessor
         ];
     }
 
+    /** Process content and validate detected Quran quotations. */
     public function process(string $content): ProcessingResult
     {
         if (!mb_check_encoding($content, 'UTF-8')) {
@@ -90,14 +91,14 @@ final class QuoteProcessor
             $lastEnd = $quote->end;
 
             try {
-                $validation = $this->validator->validateReference($quote->text, $quote->reference);
+                $validation = $this->validator->validateAgainst($quote->text, $quote->reference);
                 $canonical = implode(' ', array_map(
                     static fn (QuranVerse $verse): string => $verse->text,
                     $this->validator->range($quote->reference),
                 ));
                 $correction = $this->autoCorrect && $canonical !== $quote->text ? $canonical : null;
             } catch (InvalidQuranReference $exception) {
-                $validation = new ValidationResult(false, 'none', reference: $quote->reference, error: $exception->getMessage());
+                $validation = new ValidationResult(valid: false, matchType: 'none', reference: $quote->reference, error: $exception->getMessage());
                 $correction = null;
             }
 
@@ -124,6 +125,7 @@ final class QuoteProcessor
         return new ProcessingResult($content, $corrected, $quotes);
     }
 
+    /** Return the system prompt for a supported quote format. */
     public function getSystemPrompt(string $format = 'xml'): string
     {
         return self::SYSTEM_PROMPTS[$format]

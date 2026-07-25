@@ -93,9 +93,9 @@ final class QuranValidatorTest extends TestCase
     public function testReferenceValidationAndMismatchDetails(): void
     {
         $verse = $this->validator->verse('2:255');
-        self::assertTrue($this->validator->validateReference($verse->text, '2:255')->isValid());
+        self::assertTrue($this->validator->validateAgainst($verse->text, '2:255')->isValid());
 
-        $invalid = $this->validator->validateReference('الله لا إله إلا هو الكريم', '2:255');
+        $invalid = $this->validator->validateAgainst('الله لا إله إلا هو الكريم', '2:255');
         self::assertFalse($invalid->isValid());
         self::assertSame('2:255', $invalid->reference());
         self::assertNotNull($invalid->expectedNormalized);
@@ -112,7 +112,7 @@ final class QuranValidatorTest extends TestCase
 
     public function testDiffAgainstReference(): void
     {
-        $result = $this->validator->validateReference('بسم الله', '1:1');
+        $result = $this->validator->validateAgainst('بسم الله', '1:1');
 
         self::assertFalse($result->isValid());
         self::assertSame('بسم الله', $result->normalizedInput);
@@ -121,7 +121,7 @@ final class QuranValidatorTest extends TestCase
 
     public function testMismatchPositions(): void
     {
-        $result = $this->validator->validateReference('بسم الله الكريم الرحيم', '1:1');
+        $result = $this->validator->validateAgainst('بسم الله الكريم الرحيم', '1:1');
 
         self::assertFalse($result->isValid());
         self::assertNotNull($result->mismatchIndex);
@@ -131,14 +131,34 @@ final class QuranValidatorTest extends TestCase
     public function testLookupAndRange(): void
     {
         $verse = $this->validator->verse('1:1');
+        self::assertSame($verse, $this->validator->getVerse(1, 1));
+        self::assertNull($this->validator->getVerse(115, 1));
         self::assertSame(1, $verse->surah);
         self::assertSame(1, $verse->ayah);
         self::assertStringContainsString('بِسْمِ', $verse->text);
 
         self::assertSame('2:255', $this->validator->verse('2:255')->reference());
         $range = $this->validator->range('112:1-4');
+        $verseRange = $this->validator->getVerseRange(112, 1, 4);
         self::assertCount(4, $range);
         self::assertSame('112:4', $range[3]->reference());
+        self::assertNotNull($verseRange);
+        self::assertSame($range, $verseRange['verses']);
+        self::assertNotSame('', $verseRange['text']);
+        self::assertNotSame('', $verseRange['textSimple']);
+        self::assertNull($this->validator->getVerseRange(112, 4, 1));
+        self::assertNull($this->validator->getVerseRange(114, 7, 7));
+    }
+
+    public function testValidateAgainstInvalidReferenceReturnsNoMatch(): void
+    {
+        $invalid = $this->validator->validateAgainst('بسم الله', 'invalid');
+        $missing = $this->validator->validateAgainst('بسم الله', '115:1');
+
+        self::assertFalse($invalid->isValid());
+        self::assertSame('none', $invalid->matchType());
+        self::assertSame('بسم الله', $invalid->normalizedInput);
+        self::assertFalse($missing->isValid());
     }
 
     public function testInvalidReferencesThrow(): void
@@ -183,27 +203,37 @@ final class QuranValidatorTest extends TestCase
     {
         $surah = $this->validator->surah(1);
 
+        self::assertSame($surah, $this->validator->getSurah(1));
         self::assertNotNull($surah);
         self::assertStringContainsString('الفاتحة', $surah->name);
         self::assertSame('Al-Fatiha', $surah->englishName);
         self::assertSame(7, $surah->versesCount);
         self::assertSame(286, $this->validator->surah(2)?->versesCount);
         self::assertNull($this->validator->surah(115));
+        self::assertCount(7, $this->validator->getSurahVerses(1));
+        self::assertCount(114, $this->validator->getAllSurahs());
     }
 
     public function testSearchUsesArabicNormalization(): void
     {
         $results = $this->validator->search('الحي القيوم', 5);
         self::assertNotEmpty($results);
-        self::assertContains('2:255', array_map(static fn ($result): string => $result->verse->reference(), $results));
+        self::assertContains('2:255', array_map(static fn ($result): string => $result['verse']->reference(), $results));
 
         $normalizedResults = $this->validator->search('الله الرحمان');
         self::assertNotEmpty($normalizedResults);
-        self::assertGreaterThan(0.3, $normalizedResults[0]->score);
+        self::assertGreaterThan(0.3, $normalizedResults[0]['similarity']);
 
         self::assertLessThanOrEqual(5, count($this->validator->search('الله', 5)));
         self::assertSame([], $this->validator->search(''));
         self::assertSame([], $this->validator->search('   '));
+
+        $verse = $this->validator->verse('112:1');
+        $containingQuery = $this->validator->search($verse->simpleText.' زيادة');
+        self::assertContains('112:1', array_map(
+            static fn ($result): string => $result['verse']->reference(),
+            $containingQuery,
+        ));
     }
 
     public function testFabricationAnalysis(): void
@@ -213,6 +243,9 @@ final class QuranValidatorTest extends TestCase
         self::assertFalse($analysis->words[0]->fabricated);
         self::assertTrue($analysis->words[2]->fabricated);
         self::assertSame(1, $analysis->fabricatedWords);
+        self::assertSame(3, $analysis->stats->totalWords);
+        self::assertSame(1, $analysis->stats->fabricatedWords);
+        self::assertSame(1 / 3, $analysis->stats->fabricatedRatio);
     }
 
     #[DataProvider('validFabricationTexts')]
@@ -244,6 +277,9 @@ final class QuranValidatorTest extends TestCase
         self::assertSame([], $analysis->words);
         self::assertSame(0, $analysis->fabricatedWords);
         self::assertSame(0.0, $analysis->fabricatedRatio());
+        self::assertSame(0, $analysis->stats->totalWords);
+        self::assertSame(0, $analysis->stats->fabricatedWords);
+        self::assertSame(0.0, $analysis->stats->fabricatedRatio);
     }
 
     public function testCompletelyFabricatedText(): void
@@ -253,6 +289,9 @@ final class QuranValidatorTest extends TestCase
         self::assertCount(3, $analysis->words);
         self::assertSame(3, $analysis->fabricatedWords);
         self::assertSame(1.0, $analysis->fabricatedRatio());
+        self::assertSame(3, $analysis->stats->totalWords);
+        self::assertSame(3, $analysis->stats->fabricatedWords);
+        self::assertSame(1.0, $analysis->stats->fabricatedRatio);
     }
 
     public function testFabricationNormalizedInput(): void
@@ -279,13 +318,13 @@ final class QuranValidatorTest extends TestCase
     {
         yield '2:247 sad variant' => ['2:247', 'بَسْطَةً', 'بَصْطَةً'];
         yield '7:69 sin variant' => ['7:69', 'بَصْۜطَةً', 'بَسْطَةً'];
-        yield '2:245 sin variant' => ['2:245', 'وَيَبْصُۜطُ', 'وَيَبْسُطُ'];
-        yield '52:37 sin variant' => ['52:37', 'ٱلْمُصَۣيْطِرُونَ', 'ٱلْمُسَيْطِرُونَ'];
-        yield '88:22 sin variant' => ['88:22', 'بِمُصَيْطِرٍ', 'بِمُسَيْطِرٍ'];
         yield '2:33 spaced Adam' => ['2:33', 'يَـٰٓـَٔادَمُ', 'يَا آدَمُ'];
         yield '2:33 spaced Adam with hamza' => ['2:33', 'يَـٰٓـَٔادَمُ', 'يَا ءَادَمُ'];
         yield '2:21 spaced ayyuha' => ['2:21', 'يَـٰٓأَيُّهَا', 'يَا أَيُّهَا'];
         yield '2:21 without superscript alef' => ['2:21', 'يَـٰٓأَيُّهَا', 'يَـأَيُّهَا'];
+        yield '2:245 sin variant' => ['2:245', 'وَيَبْصُۜطُ', 'وَيَبْسُطُ'];
+        yield '52:37 sin variant' => ['52:37', 'ٱلْمُصَۣيْطِرُونَ', 'ٱلْمُسَيْطِرُونَ'];
+        yield '88:22 sin variant' => ['88:22', 'بِمُصَيْطِرٍ', 'بِمُسَيْطِرٍ'];
     }
 
     public function testInvalidUtf8Throws(): void
@@ -363,7 +402,7 @@ final class QuranValidatorTest extends TestCase
 
     public function testCreatesValidatorWithCustomOptions(): void
     {
-        $validator = QuranValidator::fromDefaultDataset(new ValidatorOptions(
+        $validator = new QuranValidator(new ValidatorOptions(
             maxSuggestions: 5,
             minDetectionLength: 4,
         ));

@@ -99,7 +99,7 @@ final class ArabicNormalizer implements ArabicNormalizerInterface
      *
      * @return string Normalized text.
      */
-    private function normalizeCore(string $text, NormalizeOptions $options): string
+    private function _normalizeCore(string $text, NormalizeOptions $options): string
     {
         if ($options->diacritics) {
             $text = preg_replace(self::DIACRITICS, '', $text) ?? $text;
@@ -153,7 +153,7 @@ final class ArabicNormalizer implements ArabicNormalizerInterface
      *
      * @return string Text normalized for corpus matching.
      */
-    private function normalizeQuranVariants(string $text): string
+    private function _normalizeQuranVariants(string $text): string
     {
         $text = str_replace('الرحمان', 'الرحمن', $text);
         $text = str_replace(['يا ادم', 'يا يها'], ['ياادم', 'يايها'], $text);
@@ -174,7 +174,7 @@ final class ArabicNormalizer implements ArabicNormalizerInterface
      */
     public function normalize(string $text, ?NormalizeOptions $options = null): string
     {
-        $this->assertUtf8($text);
+        $this->_assertUtf8($text);
 
         /** @noinspection PhpMultipleClassDeclarationsInspection */
         // NFKC decomposes Arabic presentation forms such as ﷲ and ﻻ.
@@ -184,24 +184,19 @@ final class ArabicNormalizer implements ArabicNormalizerInterface
         // Controls never carry Quran text and are removed regardless of options.
         $text = preg_replace(self::BIDI_CONTROLS, '', $text) ?? $text;
 
-        return $this->normalizeCore($text, $options ?? new NormalizeOptions());
+        return $this->_normalizeCore($text, $options ?? new NormalizeOptions());
     }
 
     /**
-     * Normalize Arabic text for Quran corpus matching.
+     * Normalize text for Quran-specific spelling and spacing variants.
      *
-     * Applies Quran-specific normalization for spelling and spacing differences
-     * in the bundled Uthmani/Imlaei dataset.
-     *
-     * @param string $text Arabic text to normalize for matching.
+     * @param string $text Arabic text to normalize for corpus matching.
      *
      * @return string Normalized matching text.
      */
     public function normalizeForMatching(string $text): string
     {
-        $text = $this->normalize($text, new NormalizeOptions(stripHamza: true));
-
-        return $this->normalizeQuranVariants($text);
+        return $this->_normalizeQuranVariants($this->normalize($text, new NormalizeOptions(stripHamza: true)));
     }
 
     /**
@@ -216,9 +211,9 @@ final class ArabicNormalizer implements ArabicNormalizerInterface
      */
     public function removeDiacritics(string $text): string
     {
-        $this->assertUtf8($text);
+        $this->_assertUtf8($text);
 
-        return $this->normalizeCore($text, new NormalizeOptions(
+        return $this->_normalizeCore($text, new NormalizeOptions(
             diacritics: true,
             markers: false,
             verseNumbers: false,
@@ -238,7 +233,7 @@ final class ArabicNormalizer implements ArabicNormalizerInterface
      */
     public function containsArabic(string $text): bool
     {
-        $this->assertUtf8($text);
+        $this->_assertUtf8($text);
 
         return preg_match(self::ARABIC_CHARACTER, $text) === 1;
     }
@@ -253,7 +248,7 @@ final class ArabicNormalizer implements ArabicNormalizerInterface
      */
     public function extractArabicSegments(string $text): array
     {
-        $this->assertUtf8($text);
+        $this->_assertUtf8($text);
         preg_match_all(self::ARABIC_SEGMENT, $text, $matches, PREG_OFFSET_CAPTURE);
         $segments = [];
 
@@ -278,7 +273,7 @@ final class ArabicNormalizer implements ArabicNormalizerInterface
      *
      * @throws InvalidUtf8 When the text is not valid UTF-8.
      */
-    private function assertUtf8(string $text): void
+    private function _assertUtf8(string $text): void
     {
         if (!mb_check_encoding($text, 'UTF-8')) {
             throw new InvalidUtf8('Input must be valid UTF-8.');

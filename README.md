@@ -24,7 +24,7 @@ $result->reference();     // "1:1"
 $result->matchType();     // "normalized"
 $result->matchedVerse();  // QuranVerse
 
-$reference = $validator->validateReference(
+$reference = $validator->validateAgainst(
     text: $validator->verse('2:255')->text,
     reference: '2:255',
 );
@@ -49,11 +49,11 @@ Normalization is for comparison, not transliteration or scholarly textual transf
 ## API
 
 - `validate(string): ValidationResult`
-- `validateReference(string, string): ValidationResult`
+- `validateAgainst(string, string): ValidationResult`
 - `detectAndValidate(string): DetectionResult`
 - `verse(string): QuranVerse`
 - `range(string): list<QuranVerse>`
-- `search(string, int = 10): list<SearchResult>`
+- `search(string, int = 10): list<array{verse: QuranVerse, similarity: float}>`
 - `analyzeFabrication(string): FabricationAnalysis`
 - `QuoteProcessor::process(string): ProcessingResult`
 - `QuoteProcessor::getSystemPrompt(string = "xml"): string`

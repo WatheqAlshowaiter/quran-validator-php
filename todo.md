@@ -7,7 +7,7 @@
 - [x] use symfony polyfills instead of "php extentions"
 - [ ] make sure it is equal to the python port exactly
   - [x] normalizer.py
-  - [ ] validator.py
+  - [x] validator.py
   - [ ] llm_integration.py 
   - [ ] init __all__
 - [ ] make sure it is equal to js port exactly

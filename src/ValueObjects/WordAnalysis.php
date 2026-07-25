@@ -6,6 +6,7 @@ namespace Watheq\QuranValidator\ValueObjects;
 
 final class WordAnalysis
 {
+    /** Create a word analysis. */
     public function __construct(
         public readonly string $word,
         public readonly bool $fabricated,

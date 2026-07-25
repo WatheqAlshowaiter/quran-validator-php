@@ -9,6 +9,7 @@ use Watheq\QuranValidator\Exceptions\InvalidVerseRange;
 
 final class QuranReference
 {
+    /** Create a parsed Quran reference. */
     public function __construct(
         public readonly int $surah,
         public readonly int $startAyah,
@@ -36,11 +37,13 @@ final class QuranReference
         );
     }
 
+    /** Return whether the reference spans multiple verses. */
     public function isRange(): bool
     {
         return $this->startAyah !== $this->endAyah;
     }
 
+    /** Format the reference as surah:ayah or surah:start-end. */
     public function __toString(): string
     {
         return $this->surah.':'.$this->startAyah.($this->isRange() ? '-'.$this->endAyah : '');

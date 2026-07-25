@@ -20,21 +20,25 @@ final class ValidationResult
     ) {
     }
 
+    /** Return whether validation succeeded. */
     public function isValid(): bool
     {
         return $this->valid;
     }
 
+    /** Return the validation match type. */
     public function matchType(): string
     {
         return $this->matchType;
     }
 
+    /** Return the matched verse, when available. */
     public function matchedVerse(): ?QuranVerse
     {
         return $this->matchedVerse;
     }
 
+    /** Return the matched reference, when available. */
     public function reference(): ?string
     {
         return $this->reference;

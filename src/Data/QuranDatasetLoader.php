@@ -12,6 +12,7 @@ use Watheq\QuranValidator\ValueObjects\QuranVerse;
 
 final class QuranDatasetLoader
 {
+    /** Create a dataset loader for the verse and surah files. */
     public function __construct(
         private readonly string $versesFile,
         private readonly string $surahsFile,
@@ -21,8 +22,8 @@ final class QuranDatasetLoader
     /** @return array{verses: list<QuranVerse>, surahs: list<QuranSurah>, surahCounts: array<int, int>} */
     public function load(): array
     {
-        $verseRows = $this->decode($this->versesFile);
-        $surahRows = $this->decode($this->surahsFile);
+        $verseRows = $this->_decode($this->versesFile);
+        $surahRows = $this->_decode($this->surahsFile);
 
         if (count($verseRows) !== 6236 || count($surahRows) !== 114) {
             throw new InvalidDataset('The dataset must contain exactly 6,236 verses across 114 surahs.');
@@ -84,7 +85,7 @@ final class QuranDatasetLoader
     }
 
     /** @return list<mixed> */
-    private function decode(string $file): array
+    private function _decode(string $file): array
     {
         if (!is_file($file)) {
             throw new DatasetFileMissing(sprintf('Dataset file not found: %s', $file));

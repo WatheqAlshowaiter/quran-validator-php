@@ -14,11 +14,14 @@ final class ProcessingResult
     ) {
     }
 
+    /** Return the original processed text. */
+    /** Return the original processed text. */
     public function originalText(): string
     {
         return $this->originalText;
     }
 
+    /** Return the corrected text, or the original when unchanged. */
     public function correctedText(): string
     {
         return $this->correctedText;
@@ -30,6 +33,7 @@ final class ProcessingResult
         return $this->quotes;
     }
 
+    /** Return whether processing found invalid quotes. */
     public function hasErrors(): bool
     {
         foreach ($this->quotes as $quote) {

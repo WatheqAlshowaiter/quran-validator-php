@@ -6,6 +6,7 @@ namespace Watheq\QuranValidator\ValueObjects;
 
 final class DetectedQuote
 {
+    /** Create a detected quote result. */
     public function __construct(
         public readonly string $text,
         public readonly string $reference,
@@ -20,11 +21,13 @@ final class DetectedQuote
     ) {
     }
 
+    /** Return whether the value represents valid Quran content. */
     public function isValid(): bool
     {
         return $this->validation?->isValid() ?? false;
     }
 
+    /** Return whether automatic correction was applied. */
     public function wasCorrected(): bool
     {
         return $this->correctedText !== null && $this->correctedText !== $this->text;

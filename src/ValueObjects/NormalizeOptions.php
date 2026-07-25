@@ -7,6 +7,7 @@ namespace Watheq\QuranValidator\ValueObjects;
 /** Options for Arabic text normalization. */
 final class NormalizeOptions
 {
+    /** Create normalization options. */
     public function __construct(
         public readonly bool $diacritics = true,
         public readonly bool $markers = true,

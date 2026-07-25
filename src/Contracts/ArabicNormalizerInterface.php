@@ -9,12 +9,15 @@ use Watheq\QuranValidator\ValueObjects\NormalizeOptions;
 
 interface ArabicNormalizerInterface
 {
+    /** Normalize Arabic text using the supplied options. */
     public function normalize(string $text, ?NormalizeOptions $options = null): string;
 
+    /** Normalize Quran-specific spelling and spacing variants. */
     public function normalizeForMatching(string $text): string;
-
+    /** Remove Arabic diacritical marks. */
     public function removeDiacritics(string $text): string;
 
+    /** Determine whether text contains Arabic characters. */
     public function containsArabic(string $text): bool;
 
     /** @return list<ArabicSegment> */

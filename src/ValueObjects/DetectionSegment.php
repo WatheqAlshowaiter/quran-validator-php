@@ -6,6 +6,7 @@ namespace Watheq\QuranValidator\ValueObjects;
 
 final class DetectionSegment
 {
+    /** Create a detected Arabic segment. */
     public function __construct(
         public readonly string $text,
         public readonly int $start,

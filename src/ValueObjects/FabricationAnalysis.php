@@ -11,11 +11,13 @@ final class FabricationAnalysis
         public readonly string $normalizedInput,
         public readonly array $words,
         public readonly int $fabricatedWords,
+        public readonly FabricationStats $stats,
     ) {
     }
 
+    /** Return the fraction of words marked as fabricated. */
     public function fabricatedRatio(): float
     {
-        return $this->words === [] ? 0.0 : $this->fabricatedWords / count($this->words);
+        return $this->stats->fabricatedRatio;
     }
 }

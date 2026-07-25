@@ -6,6 +6,7 @@ namespace Watheq\QuranValidator\ValueObjects;
 
 final class QuranSurah
 {
+    /** Create surah metadata. */
     public function __construct(
         public readonly int $number,
         public readonly string $name,

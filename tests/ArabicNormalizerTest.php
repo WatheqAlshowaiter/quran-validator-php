@@ -51,6 +51,14 @@ final class ArabicNormalizerTest extends TestCase
         );
     }
 
+    public function testQuranMatchingNormalizesSpacedAyyuha(): void
+    {
+        $normalizer = new ArabicNormalizer();
+
+        self::assertSame('يايها', $normalizer->normalizeForMatching('يا يها'));
+        self::assertSame('الرحمن', $normalizer->normalizeForMatching('الرحمان'));
+    }
+
     public function testRemoveDiacriticsPreservesLetters(): void
     {
         $normalizer = new ArabicNormalizer();
