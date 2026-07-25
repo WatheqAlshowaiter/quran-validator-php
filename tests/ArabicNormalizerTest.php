@@ -179,4 +179,13 @@ final class ArabicNormalizerTest extends TestCase
         self::assertSame(0.5, $normalizer->calculateSimilarity('اب', 'ا'));
     }
 
+    public function testFindsDifferences(): void
+    {
+        $differences = (new ArabicNormalizer())->findDifferences('بسم الله', 'بسم الرحمن');
+        self::assertCount(1, $differences);
+        self::assertSame('له', $differences[0]->input);
+        self::assertSame('رحمن', $differences[0]->correct);
+        self::assertSame(6, $differences[0]->position);
+    }
+
 }

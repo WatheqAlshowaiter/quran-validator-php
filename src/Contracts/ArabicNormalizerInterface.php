@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Watheq\QuranValidator\Contracts;
 
 use Watheq\QuranValidator\ValueObjects\ArabicSegment;
+use Watheq\QuranValidator\ValueObjects\Difference;
 use Watheq\QuranValidator\ValueObjects\NormalizeOptions;
 
 interface ArabicNormalizerInterface
@@ -26,4 +27,7 @@ interface ArabicNormalizerInterface
 
     /** Calculate Unicode-safe Levenshtein similarity between two strings. */
     public function calculateSimilarity(string $first, string $second): float;
+
+    /** @return list<Difference> */
+    public function findDifferences(string $input, string $correct): array;
 }

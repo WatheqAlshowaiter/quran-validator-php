@@ -8,6 +8,7 @@ use Normalizer;
 use Watheq\QuranValidator\Contracts\ArabicNormalizerInterface;
 use Watheq\QuranValidator\Exceptions\InvalidUtf8;
 use Watheq\QuranValidator\ValueObjects\ArabicSegment;
+use Watheq\QuranValidator\ValueObjects\Difference;
 use Watheq\QuranValidator\ValueObjects\NormalizeOptions;
 
 /**
@@ -281,6 +282,33 @@ final class ArabicNormalizer implements ArabicNormalizerInterface
         $length = max(mb_strlen($first), mb_strlen($second));
 
         return 1.0 - ($this->_levenshteinDistance($first, $second) / $length);
+    }
+
+    /** Find contiguous Unicode-safe differences between two strings. */
+    public function findDifferences(string $input, string $correct): array
+    {
+        $this->_assertUtf8($input);
+        $this->_assertUtf8($correct);
+        $differences = [];
+        $length = min(mb_strlen($input), mb_strlen($correct));
+        $start = null;
+        for ($index = 0; $index < $length; ++$index) {
+            if (mb_substr($input, $index, 1) !== mb_substr($correct, $index, 1)) {
+                $start ??= $index;
+                continue;
+            }
+            if ($start !== null) {
+                $differences[] = new Difference(mb_substr($input, $start, $index - $start), mb_substr($correct, $start, $index - $start), $start);
+                $start = null;
+            }
+        }
+        if ($start !== null || mb_strlen($input) !== mb_strlen($correct)) {
+            $start ??= $length;
+            $inputChunk = mb_substr($input, $start);
+            $correctChunk = mb_substr($correct, $start);
+            $differences[] = new Difference($inputChunk !== '' ? $inputChunk : '(missing)', $correctChunk !== '' ? $correctChunk : '(extra)', $start);
+        }
+        return $differences;
     }
 
     /** Calculate Unicode-safe Levenshtein distance. */
