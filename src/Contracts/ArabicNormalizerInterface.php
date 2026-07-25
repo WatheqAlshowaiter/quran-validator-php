@@ -14,6 +14,7 @@ interface ArabicNormalizerInterface
 
     /** Normalize Quran-specific spelling and spacing variants. */
     public function normalizeForMatching(string $text): string;
+
     /** Remove Arabic diacritical marks. */
     public function removeDiacritics(string $text): string;
 
@@ -22,4 +23,7 @@ interface ArabicNormalizerInterface
 
     /** @return list<ArabicSegment> */
     public function extractArabicSegments(string $text): array;
+
+    /** Calculate Unicode-safe Levenshtein similarity between two strings. */
+    public function calculateSimilarity(string $first, string $second): float;
 }

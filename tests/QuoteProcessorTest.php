@@ -8,15 +8,16 @@ use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Watheq\QuranValidator\Exceptions\InvalidUtf8;
-use Watheq\QuranValidator\QuoteProcessor;
+use Watheq\QuranValidator\LlmIntegration;
 use Watheq\QuranValidator\QuranValidator;
+use Watheq\QuranValidator\ValueObjects\LlmIntegrationOptions;
 
 final class QuoteProcessorTest extends TestCase
 {
     #[DataProvider('tagFormats')]
     public function testAllTagFormats(string $content, string $format): void
     {
-        $result = (new QuoteProcessor(QuranValidator::fromDefaultDataset()))->process($content);
+        $result = (new LlmIntegration(QuranValidator::fromDefaultDataset()))->process($content);
         self::assertCount(1, $result->quotes());
         self::assertSame($format, $result->quotes()[0]->format);
         self::assertSame('tagged', $result->quotes()[0]->detectionMethod);
@@ -35,7 +36,7 @@ final class QuoteProcessorTest extends TestCase
     public function testInvalidQuoteIsReportedAndCorrectedFromKnownReference(): void
     {
         $content = 'Before <quran ref="1:1">بسم الله الكريم</quran> after';
-        $result = (new QuoteProcessor(QuranValidator::fromDefaultDataset()))->process($content);
+        $result = (new LlmIntegration(QuranValidator::fromDefaultDataset()))->process($content);
 
         self::assertCount(1, $result->quotes());
         self::assertFalse($result->quotes()[0]->isValid());
@@ -47,7 +48,7 @@ final class QuoteProcessorTest extends TestCase
 
     public function testInvalidReferenceIsReported(): void
     {
-        $result = (new QuoteProcessor(QuranValidator::fromDefaultDataset()))
+        $result = (new LlmIntegration(QuranValidator::fromDefaultDataset()))
             ->process('<quran ref="115:1">نص عربي</quran>');
 
         self::assertCount(1, $result->quotes());
@@ -58,7 +59,7 @@ final class QuoteProcessorTest extends TestCase
     public function testOverlappingQuotesAreProcessedOnce(): void
     {
         $verse = $this->canonical();
-        $result = (new QuoteProcessor(QuranValidator::fromDefaultDataset()))
+        $result = (new LlmIntegration(QuranValidator::fromDefaultDataset()))
             ->process('<quran ref="1:1">'.$verse.' (1:1)</quran>');
 
         self::assertCount(1, $result->quotes());
@@ -69,12 +70,12 @@ final class QuoteProcessorTest extends TestCase
     {
         $this->expectException(InvalidUtf8::class);
 
-        (new QuoteProcessor(QuranValidator::fromDefaultDataset()))->process("\xB1\x31");
+        (new LlmIntegration(QuranValidator::fromDefaultDataset()))->process("\xB1\x31");
     }
 
     public function testAutoCorrectsNormalizedQuote(): void
     {
-        $processor = new QuoteProcessor(QuranValidator::fromDefaultDataset(), autoCorrect: true);
+        $processor = new LlmIntegration(QuranValidator::fromDefaultDataset(), new LlmIntegrationOptions(autoCorrect: true));
         $result = $processor->process('<quran ref="112:1">قل هو الله أحد</quran>');
 
         self::assertCount(1, $result->quotes());
@@ -87,7 +88,7 @@ final class QuoteProcessorTest extends TestCase
     {
         $validator = QuranValidator::fromDefaultDataset();
         $text = implode(' ', array_map(static fn ($verse): string => $verse->text, $validator->range('112:1-4')));
-        $result = (new QuoteProcessor($validator))->process('<quran ref="112:1-4">'.$text.'</quran>');
+        $result = (new LlmIntegration($validator))->process('<quran ref="112:1-4">'.$text.'</quran>');
         self::assertTrue($result->quotes()[0]->isValid());
         self::assertSame('112:1-4', $result->quotes()[0]->reference);
     }
@@ -99,28 +100,38 @@ final class QuoteProcessorTest extends TestCase
 
     public function testSystemPromptsAvailable(): void
     {
-        self::assertArrayHasKey('xml', QuoteProcessor::SYSTEM_PROMPTS);
-        self::assertArrayHasKey('markdown', QuoteProcessor::SYSTEM_PROMPTS);
-        self::assertArrayHasKey('bracket', QuoteProcessor::SYSTEM_PROMPTS);
-        self::assertArrayHasKey('minimal', QuoteProcessor::SYSTEM_PROMPTS);
+        self::assertArrayHasKey('xml', LlmIntegration::SYSTEM_PROMPTS);
+        self::assertArrayHasKey('markdown', LlmIntegration::SYSTEM_PROMPTS);
+        self::assertArrayHasKey('bracket', LlmIntegration::SYSTEM_PROMPTS);
+        self::assertArrayHasKey('minimal', LlmIntegration::SYSTEM_PROMPTS);
+    }
+
+    public function testContextualQuoteIsDetectedWithoutUntaggedScanning(): void
+    {
+        $processor = LlmIntegration::create(new LlmIntegrationOptions(scanUntagged: false));
+        $result = $processor->process('Allah says: '.$this->canonical());
+
+        self::assertCount(1, $result->quotes());
+        self::assertSame('contextual', $result->quotes()[0]->detectionMethod);
+        self::assertTrue($result->quotes()[0]->isValid());
     }
 
     public function testGetSystemPrompt(): void
     {
-        $processor = new QuoteProcessor(QuranValidator::fromDefaultDataset());
+        $processor = new LlmIntegration(QuranValidator::fromDefaultDataset());
 
         self::assertStringContainsString('quran', strtolower($processor->getSystemPrompt()));
-        self::assertSame(QuoteProcessor::SYSTEM_PROMPTS['bracket'], $processor->getSystemPrompt('bracket'));
+        self::assertSame(LlmIntegration::SYSTEM_PROMPTS['bracket'], $processor->getSystemPrompt('bracket'));
     }
 
     public function testGetSystemPromptRejectsUnknownFormat(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        (new QuoteProcessor(QuranValidator::fromDefaultDataset()))->getSystemPrompt('unknown');
+        (new LlmIntegration(QuranValidator::fromDefaultDataset()))->getSystemPrompt('unknown');
     }
     public function testInlineReference(): void
     {
-        $result = (new QuoteProcessor(QuranValidator::fromDefaultDataset()))->process(
+        $result = (new LlmIntegration(QuranValidator::fromDefaultDataset()))->process(
             'بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ (1:1)',
         );
 
@@ -133,7 +144,7 @@ final class QuoteProcessorTest extends TestCase
 
     public function testQuickValidateFindsQuranContent(): void
     {
-        $result = QuoteProcessor::quickValidate(
+        $result = LlmIntegration::quickValidate(
             '<quran ref="1:1">'.$this->canonical().'</quran>',
         );
 
@@ -144,7 +155,7 @@ final class QuoteProcessorTest extends TestCase
 
     public function testQuickValidateFindsNoQuranContent(): void
     {
-        $result = QuoteProcessor::quickValidate('This is just regular English text.');
+        $result = LlmIntegration::quickValidate('This is just regular English text.');
 
         self::assertFalse($result['has_quran_content']);
         self::assertTrue($result['all_valid']);
@@ -153,7 +164,7 @@ final class QuoteProcessorTest extends TestCase
 
     public function testQuickValidateReportsInvalidQuote(): void
     {
-        $result = QuoteProcessor::quickValidate('<quran ref="1:1">بسم الله الكريم</quran>');
+        $result = LlmIntegration::quickValidate('<quran ref="1:1">بسم الله الكريم</quran>');
 
         self::assertTrue($result['has_quran_content']);
         self::assertFalse($result['all_valid']);
@@ -162,7 +173,7 @@ final class QuoteProcessorTest extends TestCase
 
     public function testQuickValidateReportsNormalizedQuoteAsImprecise(): void
     {
-        $result = QuoteProcessor::quickValidate('<quran ref="112:1">قل هو الله أحد</quran>');
+        $result = LlmIntegration::quickValidate('<quran ref="112:1">قل هو الله أحد</quran>');
 
         self::assertTrue($result['has_quran_content']);
         self::assertFalse($result['all_valid']);

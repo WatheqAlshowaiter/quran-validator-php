@@ -14,5 +14,6 @@ return (new Config())
         'no_extra_blank_lines' => true,
         'ordered_imports' => true,
         'single_quote' => true,
+        'trailing_comma_in_multiline' => ['elements' => ['arrays']],
     ])
     ->setFinder((new Finder())->in([__DIR__.'/src', __DIR__.'/tests']));

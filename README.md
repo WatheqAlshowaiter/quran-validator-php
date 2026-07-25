@@ -14,7 +14,7 @@ composer require watheqalshowaiter/quran-validator
 
 ```php
 use Watheq\QuranValidator\QuranValidator;
-use Watheq\QuranValidator\QuoteProcessor;
+use Watheq\QuranValidator\LlmIntegration;
 
 $validator = QuranValidator::fromDefaultDataset();
 $result = $validator->validate('بسم الله الرحمن الرحيم');
@@ -33,7 +33,7 @@ $verse = $validator->verse('2:255');
 $range = $validator->range('112:1-4');
 $results = $validator->search('الحي القيوم');
 
-$processed = (new QuoteProcessor($validator))->process(
+$processed = (new LlmIntegration($validator))->process(
     '<quran ref="112:1">قل هو الله أحد</quran>',
 );
 ```

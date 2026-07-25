@@ -8,7 +8,7 @@
 - [ ] make sure it is equal to the python port exactly
   - [x] normalizer.py
   - [x] validator.py
-  - [ ] llm_integration.py 
+  - [x] llm_integration.py 
   - [ ] init __all__
 - [ ] make sure it is equal to js port exactly
   - the same as python port

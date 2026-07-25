@@ -169,4 +169,14 @@ final class ArabicNormalizerTest extends TestCase
         self::assertNotEmpty($segments);
         self::assertStringContainsString('بسم الله', $segments[0]->text);
     }
+
+    public function testCalculatesSimilarity(): void
+    {
+        $normalizer = new ArabicNormalizer();
+
+        self::assertSame(1.0, $normalizer->calculateSimilarity('الله', 'الله'));
+        self::assertSame(0.0, $normalizer->calculateSimilarity('', 'الله'));
+        self::assertSame(0.5, $normalizer->calculateSimilarity('اب', 'ا'));
+    }
+
 }

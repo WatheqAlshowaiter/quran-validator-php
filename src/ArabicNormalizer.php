@@ -265,14 +265,48 @@ final class ArabicNormalizer implements ArabicNormalizerInterface
         return $segments;
     }
 
-    /**
-     * Reject invalid UTF-8 because PHP strings are raw bytes, unlike Python's
-     * Unicode-only str type.
-     *
-     * @param string $text Text to validate.
-     *
-     * @throws InvalidUtf8 When the text is not valid UTF-8.
-     */
+    /** Calculate Unicode-safe Levenshtein similarity between two strings. */
+    public function calculateSimilarity(string $first, string $second): float
+    {
+        $this->_assertUtf8($first);
+        $this->_assertUtf8($second);
+
+        if ($first === $second) {
+            return 1.0;
+        }
+        if ($first === '' || $second === '') {
+            return 0.0;
+        }
+
+        $length = max(mb_strlen($first), mb_strlen($second));
+
+        return 1.0 - ($this->_levenshteinDistance($first, $second) / $length);
+    }
+
+    /** Calculate Unicode-safe Levenshtein distance. */
+    private function _levenshteinDistance(string $first, string $second): int
+    {
+        $firstLength = mb_strlen($first);
+        $secondLength = mb_strlen($second);
+        $previous = range(0, $secondLength);
+
+        for ($row = 1; $row <= $firstLength; ++$row) {
+            $current = [$row];
+            for ($column = 1; $column <= $secondLength; ++$column) {
+                $cost = mb_substr($first, $row - 1, 1) === mb_substr($second, $column - 1, 1) ? 0 : 1;
+                $current[$column] = min(
+                    $current[$column - 1] + 1,
+                    $previous[$column] + 1,
+                    $previous[$column - 1] + $cost,
+                );
+            }
+            $previous = $current;
+        }
+
+        return $previous[$secondLength];
+    }
+
+    /** Reject invalid UTF-8 input. */
     private function _assertUtf8(string $text): void
     {
         if (!mb_check_encoding($text, 'UTF-8')) {
